@@ -197,6 +197,15 @@ function downloadStudioScript() {
   URL.revokeObjectURL(url);
 }
 
+function copyMasterCommand() {
+  const code = document.getElementById('master-phone-cmd').innerText;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.getElementById('master-copy-text');
+    btn.innerText = 'Copied!';
+    setTimeout(() => { btn.innerText = 'Copy'; }, 2000);
+  });
+}
+
 // Init
 loadEdgeStatus();
 loadDriveInfo();
