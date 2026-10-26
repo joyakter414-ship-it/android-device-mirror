@@ -304,7 +304,7 @@ function stopWebStream() {
   isStreaming = false;
   if (liveWs) {
     try {
-      liveWs.send(JSON.stringify({ action: 'stream_stop' }));
+      liveWs.send(JSON.stringify({ action: 'stream_stop', reason: 'user_stopped' }));
       liveWs.close();
     } catch (_) {}
     liveWs = null;
@@ -314,10 +314,27 @@ function stopWebStream() {
   document.getElementById('icon-web-stream').className = 'fa-solid fa-play';
   document.getElementById('btn-web-stream').className = 'p-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold flex items-center justify-center space-x-1.5 transition shadow-lg shadow-cyan-600/20';
 
-  screenStatusText.innerText = 'Web Player Standby';
-  screenStatusBadge.className = 'text-xs bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 px-2.5 py-0.5 rounded-full font-mono flex items-center gap-1.5';
+  screenStatusText.innerText = 'Deep Rest (0% Battery)';
+  screenStatusBadge.className = 'text-xs bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 px-2.5 py-0.5 rounded-full font-mono flex items-center gap-1.5';
   if (standbyOverlay) standbyOverlay.classList.remove('hidden');
 }
+
+// Auto-sleep phone stream when browser tab is minimized or backgrounded
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && isStreaming) {
+    stopWebStream();
+  }
+});
+
+// Auto-sleep when tab/browser is closed
+window.addEventListener('beforeunload', () => {
+  if (liveWs) {
+    try {
+      liveWs.send(JSON.stringify({ action: 'stream_stop', reason: 'browser_closed' }));
+      liveWs.close();
+    } catch (_) {}
+  }
+});
 
 // 100% Natural Touch, Mouse & Click Handling (Like touching real phone)
 if (screenCanvas) {

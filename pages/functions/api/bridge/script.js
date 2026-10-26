@@ -59,10 +59,11 @@ setprop service.adb.tcp.port 5555
 stop adbd 2>/dev/null
 start adbd 2>/dev/null
 
-# 5. Build In-Phone Smart Event & Screen Agent
+# 5. Build In-Phone Smart Event & Screen Agent (Zero Battery Drain when Idle)
 cat << 'AGENT_EOF' > /data/local/tmp/hector_agent.sh
 #!/system/bin/sh
 STREAM_PID=""
+LAST_ACTIVE=$(date +%s)
 
 cleanup() {
     [ -n "$STREAM_PID" ] && kill -9 "$STREAM_PID" 2>/dev/null
@@ -70,7 +71,23 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+# Battery-Saver Auto-Rest Watchdog:
+# If user is inactive for >90 seconds while streaming, auto-drop into Deep Rest!
+(
+    while true; do
+        sleep 20
+        NOW=$(date +%s)
+        DIFF=$((NOW - LAST_ACTIVE))
+        if [ "$DIFF" -gt 90 ] && [ -n "$STREAM_PID" ]; then
+            kill -9 "$STREAM_PID" 2>/dev/null
+            STREAM_PID=""
+            echo '{"type":"status","mode":"deep_rest","reason":"auto_inactivity_sleep"}'
+        fi
+    done
+) &
+
 while IFS= read -r line; do
+    LAST_ACTIVE=$(date +%s)
     case "$line" in
         *"stream_start"*)
             [ -n "$STREAM_PID" ] && kill -9 "$STREAM_PID" 2>/dev/null
@@ -89,6 +106,7 @@ while IFS= read -r line; do
         *"stream_stop"*)
             [ -n "$STREAM_PID" ] && kill -9 "$STREAM_PID" 2>/dev/null
             STREAM_PID=""
+            echo '{"type":"status","mode":"deep_rest","reason":"stream_stopped"}'
             ;;
         *"tap"*)
             X=$(echo "$line" | sed -n 's/.*"x":[ ]*\\([0-9]*\\).*/\\1/p')

@@ -81,11 +81,25 @@ export class BridgeRoom {
       }
       if (role === "pc" && this.pcWs === server) {
         this.pcWs = null;
+        // Instantly notify phone to drop into Deep Rest Mode (0% battery drain)
+        if (this.phoneWs && this.phoneWs.readyState === 1) {
+          try {
+            this.phoneWs.send(JSON.stringify({ action: "stream_stop", reason: "pc_disconnected" }));
+          } catch (_) {}
+        }
       }
     });
 
     server.addEventListener("error", (err) => {
       console.error(`[BridgeRoom] ${role} error:`, err);
+      if (role === "pc" && this.pcWs === server) {
+        this.pcWs = null;
+        if (this.phoneWs && this.phoneWs.readyState === 1) {
+          try {
+            this.phoneWs.send(JSON.stringify({ action: "stream_stop", reason: "pc_error" }));
+          } catch (_) {}
+        }
+      }
     });
 
     return new Response(null, {
