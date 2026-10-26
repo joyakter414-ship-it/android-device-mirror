@@ -195,9 +195,13 @@
                     <i class="fa-solid fa-camera-rotate"></i>
                     <span>Switch</span>
                   </button>
+                  <button onclick="toggleCamAudio()" id="btn-cam-audio" title="Listen to Phone Audio while watching Camera" class="px-2 py-0.5 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-400 text-[10px] font-semibold border border-gray-800 transition flex items-center space-x-1">
+                    <i class="fa-solid fa-volume-xmark" id="icon-cam-audio"></i>
+                    <span id="text-cam-audio">Audio OFF</span>
+                  </button>
                   <button onclick="captureCameraSnapshot()" title="Capture High-Res Cam Photo" class="px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[10px] flex items-center space-x-1 shadow">
                     <i class="fa-solid fa-camera"></i>
-                    <span>Cam Snap</span>
+                    <span>Snap</span>
                   </button>
                   <button onclick="toggleLiveCameraStream()" title="Exit Cam Cast" class="text-red-400 hover:text-red-300 text-[11px] font-medium">
                     <span>Close</span>

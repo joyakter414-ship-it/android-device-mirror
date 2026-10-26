@@ -474,6 +474,14 @@ function startLiveAudioStream() {
 
   if (banner) banner.classList.remove('hidden');
 
+  // Sync Live Cam Audio toggle if visible
+  const btnCam = document.getElementById('btn-cam-audio');
+  const iconCam = document.getElementById('icon-cam-audio');
+  const textCam = document.getElementById('text-cam-audio');
+  if (btnCam) btnCam.className = 'px-2 py-0.5 rounded-lg bg-emerald-950 hover:bg-emerald-900 text-emerald-300 text-[10px] font-semibold border border-emerald-600/80 transition flex items-center space-x-1 shadow-sm';
+  if (iconCam) iconCam.className = 'fa-solid fa-volume-high text-emerald-400 animate-pulse';
+  if (textCam) textCam.innerText = 'Audio ON';
+
   sendWebCommand({ action: 'audio_stream_start' });
 }
 
@@ -498,6 +506,14 @@ function stopLiveAudioStream() {
   }
 
   if (banner) banner.classList.add('hidden');
+
+  // Sync Live Cam Audio toggle if visible
+  const btnCam = document.getElementById('btn-cam-audio');
+  const iconCam = document.getElementById('icon-cam-audio');
+  const textCam = document.getElementById('text-cam-audio');
+  if (btnCam) btnCam.className = 'px-2 py-0.5 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-400 text-[10px] font-semibold border border-gray-800 transition flex items-center space-x-1';
+  if (iconCam) iconCam.className = 'fa-solid fa-volume-xmark';
+  if (textCam) textCam.innerText = 'Audio OFF';
 
   sendWebCommand({ action: 'audio_stream_stop' });
 }
@@ -591,7 +607,20 @@ function stopLiveCameraStream() {
 
   if (camContainer) camContainer.classList.add('hidden');
 
+  // If live camera audio was also on, turn it off to save phone battery
+  if (isAudioStreaming) {
+    stopLiveAudioStream();
+  }
+
   sendWebCommand({ action: 'cam_stream_stop' });
+}
+
+function toggleCamAudio() {
+  if (isAudioStreaming) {
+    stopLiveAudioStream();
+  } else {
+    startLiveAudioStream();
+  }
 }
 
 function switchCameraFacing() {
