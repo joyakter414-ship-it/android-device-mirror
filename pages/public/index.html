@@ -180,12 +180,10 @@
             </button>
           </div>
 
-          <!-- Remote Keyboard Input Box -->
-          <div class="mt-3 flex space-x-1.5">
-            <input type="text" id="web-text-input" placeholder="Type text to send to phone..." onkeydown="handleInputKeyDown(event)" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-cyan-500 font-sans">
-            <button onclick="sendTextInput()" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold border border-gray-700 transition shrink-0">
-              Send
-            </button>
+          <!-- Natural Touch & Click Hint -->
+          <div class="mt-3 bg-gray-950/60 border border-gray-800/80 rounded-xl px-3 py-2 text-[11px] text-gray-400 flex items-center space-x-2">
+            <i class="fa-solid fa-arrow-pointer text-cyan-400 text-xs"></i>
+            <span>মাউস দিয়ে স্ক্রিনে ক্লিক করলেই <strong>Tap</strong> হবে, টানলে <strong>Scroll</strong> হবে। কীবোর্ড ওপেন হলে অক্ষরের ওপর ক্লিক করলেই টাইপ হবে।</span>
           </div>
         </div>
       </div>

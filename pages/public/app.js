@@ -121,6 +121,8 @@ function copyMasterCommand() {
 // ============================================================
 let liveWs = null;
 let isStreaming = false;
+let phoneWidth = 1080;
+let phoneHeight = 2400;
 let touchStartX = 0;
 let touchStartY = 0;
 let touchStartTime = 0;
@@ -170,8 +172,14 @@ function startWebStream() {
         const blob = new Blob([event.data], { type: 'image/png' });
         const img = new Image();
         img.onload = () => {
+          if (img.naturalWidth && img.naturalHeight) {
+            phoneWidth = img.naturalWidth;
+            phoneHeight = img.naturalHeight;
+            if (screenCanvas.width !== phoneWidth) screenCanvas.width = phoneWidth;
+            if (screenCanvas.height !== phoneHeight) screenCanvas.height = phoneHeight;
+          }
           if (screenCtx) {
-            screenCtx.drawImage(img, 0, 0, screenCanvas.width, screenCanvas.height);
+            screenCtx.drawImage(img, 0, 0);
           }
           URL.revokeObjectURL(img.src);
         };
@@ -182,7 +190,13 @@ function startWebStream() {
           if (msg.type === 'frame_base64') {
             const img = new Image();
             img.onload = () => {
-              if (screenCtx) screenCtx.drawImage(img, 0, 0, screenCanvas.width, screenCanvas.height);
+              if (img.naturalWidth && img.naturalHeight) {
+                phoneWidth = img.naturalWidth;
+                phoneHeight = img.naturalHeight;
+                if (screenCanvas.width !== phoneWidth) screenCanvas.width = phoneWidth;
+                if (screenCanvas.height !== phoneHeight) screenCanvas.height = phoneHeight;
+              }
+              if (screenCtx) screenCtx.drawImage(img, 0, 0);
             };
             img.src = 'data:image/png;base64,' + msg.data;
           }
@@ -223,37 +237,37 @@ function stopWebStream() {
   if (standbyOverlay) standbyOverlay.classList.remove('hidden');
 }
 
-// Canvas Touch & Mouse Interaction
+// 100% Natural Touch, Mouse & Click Handling (Like touching real phone)
 if (screenCanvas) {
   function getCanvasCoords(e) {
     const rect = screenCanvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    const scaleX = 1080 / rect.width;
-    const scaleY = 2400 / rect.height;
+    const clientX = e.touches ? e.touches[0].clientX : (e.changedTouches ? e.changedTouches[0].clientX : e.clientX);
+    const clientY = e.touches ? e.touches[0].clientY : (e.changedTouches ? e.changedTouches[0].clientY : e.clientY);
+    const scaleX = phoneWidth / rect.width;
+    const scaleY = phoneHeight / rect.height;
     return {
       x: Math.round((clientX - rect.left) * scaleX),
       y: Math.round((clientY - rect.top) * scaleY)
     };
   }
 
-  screenCanvas.addEventListener('mousedown', (e) => {
+  const handlePointerDown = (e) => {
     const coords = getCanvasCoords(e);
     touchStartX = coords.x;
     touchStartY = coords.y;
     touchStartTime = Date.now();
-  });
+  };
 
-  screenCanvas.addEventListener('mouseup', (e) => {
+  const handlePointerUp = (e) => {
     const coords = getCanvasCoords(e);
     const duration = Date.now() - touchStartTime;
     const dist = Math.hypot(coords.x - touchStartX, coords.y - touchStartY);
 
     if (dist < 15) {
-      // Tap Event
+      // Direct Tap anywhere on phone screen (apps, icons, keyboard letters)
       sendWebCommand({ action: 'tap', x: coords.x, y: coords.y });
     } else {
-      // Swipe Event
+      // Natural Swipe / Scroll
       sendWebCommand({
         action: 'swipe',
         x1: touchStartX,
@@ -263,14 +277,37 @@ if (screenCanvas) {
         duration: Math.max(100, Math.min(duration, 500))
       });
     }
-  });
+  };
+
+  screenCanvas.addEventListener('mousedown', handlePointerDown);
+  screenCanvas.addEventListener('mouseup', handlePointerUp);
+  screenCanvas.addEventListener('touchstart', handlePointerDown, { passive: true });
+  screenCanvas.addEventListener('touchend', handlePointerUp, { passive: true });
 }
+
+// Seamless Keyboard typing without any input box (press Backspace, Enter, Space, or letters directly!)
+window.addEventListener('keydown', (e) => {
+  if (!isStreaming) return;
+  if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
+
+  if (e.key === 'Backspace') {
+    sendPhoneKey(67); // KEYCODE_DEL
+    e.preventDefault();
+  } else if (e.key === 'Enter') {
+    sendPhoneKey(66); // KEYCODE_ENTER
+    e.preventDefault();
+  } else if (e.key === ' ' || e.key === 'Spacebar') {
+    sendPhoneKey(62); // KEYCODE_SPACE
+    e.preventDefault();
+  } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    sendWebCommand({ action: 'text', text: e.key });
+  }
+});
 
 function sendWebCommand(payload) {
   if (liveWs && liveWs.readyState === WebSocket.OPEN) {
     liveWs.send(JSON.stringify(payload));
   } else {
-    // If stream not open, auto-open and send
     console.log('[Web Controller] Command buffered:', payload);
   }
 }
@@ -282,20 +319,6 @@ function sendPhoneKey(keyCode) {
 function sendStealthMode() {
   sendWebCommand({ action: 'stealth_off' });
   alert('Stealth Mode Activated: Remote phone screen backlight turned 100% OFF!');
-}
-
-function sendTextInput() {
-  const input = document.getElementById('web-text-input');
-  if (input && input.value.trim()) {
-    sendWebCommand({ action: 'text', text: input.value });
-    input.value = '';
-  }
-}
-
-function handleInputKeyDown(e) {
-  if (e.key === 'Enter') {
-    sendTextInput();
-  }
 }
 
 function captureWebSnapshot() {
@@ -310,4 +333,3 @@ function captureWebSnapshot() {
 // Init
 loadEdgeStatus();
 loadDriveInfo();
-updateStudioScript();
