@@ -1,3 +1,85 @@
+// ============================================================
+// Hector Authentication & Security Gatekeeper
+// ============================================================
+const AUTH_KEY = 'hector_sec_token';
+const AUTH_EMAIL = 'hector_sec_email';
+
+function checkAuthStatus() {
+  const token = localStorage.getItem(AUTH_KEY);
+  const authGate = document.getElementById('auth-gate');
+  const dashboard = document.getElementById('dashboard-wrapper');
+  const btnLogout = document.getElementById('btn-logout');
+
+  if (token) {
+    if (authGate) authGate.classList.add('hidden');
+    if (dashboard) dashboard.classList.remove('hidden');
+    if (btnLogout) btnLogout.classList.remove('hidden');
+    loadEdgeStatus();
+    loadDriveInfo();
+  } else {
+    if (authGate) authGate.classList.remove('hidden');
+    if (dashboard) dashboard.classList.add('hidden');
+    if (btnLogout) btnLogout.classList.add('hidden');
+  }
+}
+
+async function handleLoginSubmit(e) {
+  e.preventDefault();
+  const emailInput = document.getElementById('auth-email');
+  const passInput = document.getElementById('auth-password');
+  const errBox = document.getElementById('auth-error-box');
+  const errText = document.getElementById('auth-error-msg');
+  const submitBtn = document.getElementById('btn-login-submit');
+
+  const email = emailInput ? emailInput.value.trim() : '';
+  const password = passInput ? passInput.value.trim() : '';
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Verifying...</span>';
+  }
+  if (errBox) errBox.classList.add('hidden');
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+
+    if (data.success && data.token) {
+      localStorage.setItem(AUTH_KEY, data.token);
+      localStorage.setItem(AUTH_EMAIL, data.user ? data.user.email : email);
+      checkAuthStatus();
+    } else {
+      if (errBox) {
+        errText.innerText = data.error || 'ভুল ইমেইল বা পাসওয়ার্ড! অ্যাক্সেস ডিনাইড।';
+        errBox.classList.remove('hidden');
+      }
+    }
+  } catch (err) {
+    if (errBox) {
+      errText.innerText = 'সার্ভার যোগাযোগে সমস্যা: ' + err.message;
+      errBox.classList.remove('hidden');
+    }
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="fa-solid fa-lock-open"></i><span>Unlock Hector Dashboard</span>';
+    }
+  }
+}
+
+function handleLogout() {
+  if (isStreaming) {
+    stopWebStream();
+  }
+  localStorage.removeItem(AUTH_KEY);
+  localStorage.removeItem(AUTH_EMAIL);
+  checkAuthStatus();
+}
+
 // Hector Cloud App Controller
 const audioBeep = document.getElementById('audio-beep');
 
@@ -331,5 +413,4 @@ function captureWebSnapshot() {
 }
 
 // Init
-loadEdgeStatus();
-loadDriveInfo();
+checkAuthStatus();

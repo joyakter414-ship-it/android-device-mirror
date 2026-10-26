@@ -50,9 +50,70 @@
           <span class="text-gray-400">Drive:</span>
           <span class="text-gray-200 font-mono" id="drive-user">joyakter414@gmail.com</span>
         </div>
+        <!-- Logout Button (Shown when logged in) -->
+        <button id="btn-logout" onclick="handleLogout()" class="hidden px-2.5 py-1.5 rounded-lg bg-red-950/80 hover:bg-red-900 border border-red-800/60 text-red-300 text-xs font-medium transition flex items-center space-x-1.5 shadow-sm">
+          <i class="fa-solid fa-lock text-[11px]"></i>
+          <span>Logout</span>
+        </button>
       </div>
     </div>
   </header>
+
+  <!-- Secure Authentication Gate (Locks site unless authorized) -->
+  <div id="auth-gate" class="min-h-[85vh] flex items-center justify-center px-4 py-12">
+    <div class="max-w-md w-full bg-[#0c1427]/95 border border-cyan-500/40 rounded-3xl p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+      <!-- Glow Gradients -->
+      <div class="absolute -top-12 -left-12 w-44 h-44 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-12 -right-12 w-44 h-44 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="text-center mb-6 relative">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 mx-auto flex items-center justify-center shadow-lg shadow-cyan-500/30 mb-3 text-white text-2xl">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h2 class="text-xl font-extrabold text-white">Hector Cloud Guard</h2>
+        <p class="text-xs text-gray-400 mt-1.5 leading-relaxed">
+          এই ড্যাশবোর্ডটি পাসওয়ার্ড দ্বারা সুরক্ষিত। অনুমতি ছাড়া কেউ স্ক্রিপ্ট বানাতে বা লাইভ স্ক্রিন দেখতে পারবে না।
+        </p>
+      </div>
+
+      <!-- Error Alert Box -->
+      <div id="auth-error-box" class="hidden mb-4 p-3 bg-red-950/90 border border-red-800/80 rounded-xl text-red-300 text-xs flex items-center space-x-2">
+        <i class="fa-solid fa-triangle-exclamation shrink-0 text-red-400"></i>
+        <span id="auth-error-msg">ভুল ইমেইল বা পাসওয়ার্ড! অ্যাক্সেস ডিনাইড।</span>
+      </div>
+
+      <!-- Login Form -->
+      <form onsubmit="handleLoginSubmit(event)" class="space-y-4 relative">
+        <div>
+          <label class="block text-xs font-semibold text-gray-300 mb-1.5 flex items-center space-x-1.5">
+            <i class="fa-regular fa-envelope text-cyan-400"></i>
+            <span>Authorized Email</span>
+          </label>
+          <input type="email" id="auth-email" required placeholder="joyakter414@gmail.com" class="w-full bg-gray-950 border border-gray-800 focus:border-cyan-500 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none transition">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-300 mb-1.5 flex items-center space-x-1.5">
+            <i class="fa-solid fa-key text-cyan-400"></i>
+            <span>Security Password</span>
+          </label>
+          <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-gray-950 border border-gray-800 focus:border-cyan-500 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none transition">
+        </div>
+
+        <button type="submit" id="btn-login-submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-600/25 transition flex items-center justify-center space-x-2 cursor-pointer">
+          <i class="fa-solid fa-lock-open"></i>
+          <span>Unlock Hector Dashboard</span>
+        </button>
+      </form>
+
+      <div class="mt-6 pt-4 border-t border-gray-800/80 text-center text-[11px] text-gray-500 font-mono">
+        <i class="fa-solid fa-lock text-cyan-500/70 mr-1"></i> Cloudflare Edge Protected • AES Encrypted
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Authenticated App Container (Hidden until logged in) -->
+  <div id="dashboard-wrapper" class="hidden">
 
   <!-- Hero Banner -->
   <div class="bg-gradient-to-r from-cyan-950/40 via-blue-950/20 to-transparent border-b border-gray-800/60 py-6">
@@ -214,7 +275,7 @@
 
           <!-- Command Box -->
           <div class="bg-gray-950 border border-gray-800 rounded-xl p-3.5 flex items-center justify-between font-mono text-xs text-cyan-300 overflow-x-auto gap-3">
-            <code id="cmd-bridge" class="truncate">adb shell "curl -sL https://hector-drt.pages.dev/api/bridge/script | sh"</code>
+            <code id="cmd-bridge" class="truncate">curl -sL "https://hector-drt.pages.dev/api/bridge/script?token=sk_phone_bridge_8f3a9d2c1e7b45" | sh</code>
             <button onclick="copyCommand()" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-sans transition shrink-0 flex items-center space-x-1.5">
               <i class="fa-regular fa-copy"></i>
               <span id="copy-btn-text">Copy</span>
@@ -390,8 +451,8 @@
                 <i class="fa-solid fa-mobile"></i> পদ্ধতি ১: সরাসরি মোবাইলের Termux অ্যাপে (কোনো Mac বা কম্পিউটার লাগবে না):
               </div>
               <div class="bg-black/80 rounded-lg p-2.5 font-mono text-xs text-emerald-300 flex items-center justify-between gap-3 overflow-x-auto border border-gray-900">
-                <code id="phone-direct-cmd" class="truncate">curl -sL https://hector-drt.pages.dev/api/bridge/script | sh</code>
-                <button onclick="navigator.clipboard.writeText('curl -sL https://hector-drt.pages.dev/api/bridge/script | sh')" class="px-2.5 py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white font-sans text-[11px] transition shrink-0">Copy</button>
+                <code id="phone-direct-cmd" class="truncate">curl -sL "https://hector-drt.pages.dev/api/bridge/script?token=sk_phone_bridge_8f3a9d2c1e7b45" | sh</code>
+                <button onclick="navigator.clipboard.writeText('curl -sL &quot;https://hector-drt.pages.dev/api/bridge/script?token=sk_phone_bridge_8f3a9d2c1e7b45&quot; | sh')" class="px-2.5 py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white font-sans text-[11px] transition shrink-0">Copy</button>
               </div>
             </div>
 
@@ -401,7 +462,7 @@
                 <i class="fa-solid fa-plug"></i> পদ্ধতি ২: যদি স্ক্রিন সম্পূর্ণ ভাঙা থাকে (যেকোনো পিসি/ম্যাক থেকে ১ বার ক্যাবল দিয়ে):
               </div>
               <div class="bg-black/80 rounded-lg p-2.5 font-mono text-xs text-cyan-300 flex items-center justify-between gap-3 overflow-x-auto border border-gray-900">
-                <code id="master-phone-cmd" class="truncate">adb shell "curl -sL https://hector-drt.pages.dev/api/bridge/script | sh"</code>
+                <code id="master-phone-cmd" class="truncate">adb shell "curl -sL 'https://hector-drt.pages.dev/api/bridge/script?token=sk_phone_bridge_8f3a9d2c1e7b45' | sh"</code>
                 <button onclick="copyMasterCommand()" class="px-2.5 py-1 rounded bg-cyan-700 hover:bg-cyan-600 text-white font-sans text-[11px] transition shrink-0 flex items-center space-x-1">
                   <i class="fa-regular fa-copy"></i>
                   <span id="master-copy-text">Copy</span>
@@ -446,6 +507,8 @@
   <footer class="border-t border-gray-800/80 py-6 text-center text-xs text-gray-500 font-mono">
     Hector Cloud Device Mirror Suite • Deployed on Cloudflare Pages (hector-drt.pages.dev) • 100% Zero-App
   </footer>
+
+  </div><!-- /#dashboard-wrapper -->
 
   <!-- Audio Beep -->
   <audio id="audio-beep" preload="auto">

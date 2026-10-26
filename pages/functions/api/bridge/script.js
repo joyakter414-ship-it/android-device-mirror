@@ -1,7 +1,25 @@
 export async function onRequest(context) {
   const { request } = context;
   const url = new URL(request.url);
-  const token = url.searchParams.get('token') || 'sk_phone_bridge_8f3a9d2c1e7b45';
+  const token = url.searchParams.get('token');
+  const authHeader = request.headers.get('Authorization') || '';
+  
+  const REQUIRED_TOKEN = 'sk_phone_bridge_8f3a9d2c1e7b45';
+
+  // Protect script generation: must provide valid token or auth header
+  if (token !== REQUIRED_TOKEN && !authHeader.includes('hector_sec_')) {
+    return new Response(JSON.stringify({
+      error: "403 Forbidden: Security Token Required",
+      message: "অননুমোদিত প্রবেশাধিকার নিষিদ্ধ! দয়া করে https://hector-drt.pages.dev এ লগইন করুন।"
+    }), {
+      status: 403,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
+  }
+
   const relayUrl = 'wss://phone-adb-bridge.joyakter414.workers.dev/ws';
 
   const script = `#!/system/bin/sh
