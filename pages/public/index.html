@@ -177,6 +177,25 @@
             </div>
           </div>
 
+          <!-- Stealth Security Auto-Lock Alert Banner -->
+          <div id="stealth-security-alert" class="hidden max-w-4xl mx-auto mb-4 p-3.5 rounded-2xl bg-gradient-to-r from-red-950/90 via-red-900/80 to-purple-950/90 border border-red-500/80 text-red-200 text-xs font-medium flex items-center justify-between shadow-2xl animate-pulse">
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 rounded-xl bg-red-600/30 text-red-400 border border-red-500 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-shield-halved text-sm"></i>
+              </div>
+              <div>
+                <div class="font-bold text-red-300 flex items-center gap-1.5">
+                  <span>🚨 Privacy Auto-Lock Triggered!</span>
+                  <span class="text-[10px] bg-red-900 px-2 py-0.5 rounded-full font-mono text-white">Power / Wake Detected</span>
+                </div>
+                <div id="stealth-security-alert-text" class="text-[11px] text-gray-300 mt-0.5">
+                  মোবাইলের ফিজিক্যাল পাওয়ার বাটন বা স্ক্রিন টাচ ধরা পড়েছে! গোপনীয়তা বজায় রাখতে ফোন অবিলম্বে <strong>লক স্ক্রিন (Lock Screen)</strong>-এ পাঠিয়ে দেওয়া হয়েছে।
+                </div>
+              </div>
+            </div>
+            <button onclick="document.getElementById('stealth-security-alert').classList.add('hidden')" class="ml-3 px-2.5 py-1 rounded-lg bg-red-900/60 hover:bg-red-800 text-red-200 text-xs font-bold transition">✕ Dismiss</button>
+          </div>
+
           <!-- Dual Phone Mockups Side-by-Side Grid -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start justify-center max-w-4xl mx-auto">
 

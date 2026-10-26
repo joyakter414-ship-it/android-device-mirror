@@ -65,6 +65,7 @@ cat << 'AGENT_EOF' > /data/local/tmp/hector_agent.sh
 STREAM_PID=""
 AUDIO_STREAM_PID=""
 CAM_STREAM_PID=""
+STEALTH_WATCHER_PID=""
 CAM_ID="1"
 LAST_ACTIVE=$(date +%s)
 
@@ -72,6 +73,7 @@ cleanup() {
     [ -n "$STREAM_PID" ] && kill -9 "$STREAM_PID" 2>/dev/null
     [ -n "$AUDIO_STREAM_PID" ] && kill -9 "$AUDIO_STREAM_PID" 2>/dev/null
     [ -n "$CAM_STREAM_PID" ] && kill -9 "$CAM_STREAM_PID" 2>/dev/null
+    [ -n "$STEALTH_WATCHER_PID" ] && kill -9 "$STEALTH_WATCHER_PID" 2>/dev/null
     rm -f /data/local/tmp/achunk_* /data/local/tmp/cam_* 2>/dev/null
     exit 0
 }
@@ -85,13 +87,15 @@ trap cleanup EXIT INT TERM
         NOW=$(date +%s)
         DIFF=$((NOW - LAST_ACTIVE))
         if [ "$DIFF" -gt 120 ]; then
-            if [ -n "$STREAM_PID" ] || [ -n "$AUDIO_STREAM_PID" ] || [ -n "$CAM_STREAM_PID" ]; then
+            if [ -n "$STREAM_PID" ] || [ -n "$AUDIO_STREAM_PID" ] || [ -n "$CAM_STREAM_PID" ] || [ -n "$STEALTH_WATCHER_PID" ]; then
                 kill -9 "$STREAM_PID" 2>/dev/null
                 kill -9 "$AUDIO_STREAM_PID" 2>/dev/null
                 kill -9 "$CAM_STREAM_PID" 2>/dev/null
+                kill -9 "$STEALTH_WATCHER_PID" 2>/dev/null
                 STREAM_PID=""
                 AUDIO_STREAM_PID=""
                 CAM_STREAM_PID=""
+                STEALTH_WATCHER_PID=""
                 rm -f /data/local/tmp/achunk_* /data/local/tmp/cam_* 2>/dev/null
                 echo '{"type":"status","mode":"deep_rest","reason":"auto_inactivity_sleep"}'
             fi
@@ -120,9 +124,11 @@ while IFS= read -r line; do
             [ -n "$STREAM_PID" ] && kill -9 "$STREAM_PID" 2>/dev/null
             [ -n "$AUDIO_STREAM_PID" ] && kill -9 "$AUDIO_STREAM_PID" 2>/dev/null
             [ -n "$CAM_STREAM_PID" ] && kill -9 "$CAM_STREAM_PID" 2>/dev/null
+            [ -n "$STEALTH_WATCHER_PID" ] && kill -9 "$STEALTH_WATCHER_PID" 2>/dev/null
             STREAM_PID=""
             AUDIO_STREAM_PID=""
             CAM_STREAM_PID=""
+            STEALTH_WATCHER_PID=""
             rm -f /data/local/tmp/achunk_* /data/local/tmp/cam_* 2>/dev/null
             echo '{"type":"status","mode":"deep_rest","reason":"stream_stopped"}'
             ;;
@@ -251,12 +257,61 @@ while IFS= read -r line; do
             settings put system screen_brightness 0 2>/dev/null
             echo 0 > /sys/class/backlight/panel0-backlight/brightness 2>/dev/null
             echo 0 > /sys/class/leds/lcd-backlight/brightness 2>/dev/null
+            for b in /sys/class/backlight/*/brightness; do
+                [ -f "$b" ] && echo 0 > "$b" 2>/dev/null
+            done
             echo '{"type":"stealth_status","active":true}'
+            [ -n "$STEALTH_WATCHER_PID" ] && kill -9 "$STEALTH_WATCHER_PID" 2>/dev/null
+            STEALTH_WATCHER_PID=""
+            (
+                logcat -c 2>/dev/null
+                (
+                    getevent 2>/dev/null &
+                    logcat -b system -b main -b events -T 1 2>/dev/null &
+                    wait
+                ) | while read -r evline; do
+                    LOCK_TRIGGER=0
+                    case "$evline" in
+                        *"0074"*|*"KEY_POWER"*|*"keyCode=26"*|*"KEYCODE_POWER"*|*"powerPressed"*|*"screen_toggled"*|*"Waking up"*)
+                            LOCK_TRIGGER=1
+                            ;;
+                    esac
+
+                    if [ "$LOCK_TRIGGER" -eq 1 ]; then
+                        # 1. Minimize current app to Home launcher immediately to hide personal content
+                        input keyevent 3 2>/dev/null
+                        sleep 0.05
+                        # 2. Lock screen and turn off
+                        input keyevent 26 2>/dev/null
+                        sleep 0.1
+                        # 3. Wake immediately to Lock Screen (Keyguard)
+                        input keyevent 224 2>/dev/null
+                        am broadcast -a com.android.internal.policy.impl.ShowLockScreen 2>/dev/null
+                        # 4. Restore normal screen brightness so lock screen is visible to person
+                        settings put system screen_brightness 128 2>/dev/null
+                        echo 128 > /sys/class/backlight/panel0-backlight/brightness 2>/dev/null
+                        echo 128 > /sys/class/leds/lcd-backlight/brightness 2>/dev/null
+                        for b in /sys/class/backlight/*/brightness; do
+                            [ -f "$b" ] && echo 128 > "$b" 2>/dev/null
+                        done
+                        # 5. Notify web dashboard
+                        echo '{"type":"stealth_status","active":false,"reason":"power_button_locked"}'
+                        echo '{"type":"alert","title":"Stealth Alert","message":"Physical power button or screen wake detected! Phone auto-locked to Lock Screen to protect privacy."}'
+                        break
+                    fi
+                done
+            ) &
+            STEALTH_WATCHER_PID=$!
             ;;
         *"stealth_disable"*|*"stealth_off"*)
+            [ -n "$STEALTH_WATCHER_PID" ] && kill -9 "$STEALTH_WATCHER_PID" 2>/dev/null
+            STEALTH_WATCHER_PID=""
             settings put system screen_brightness 128 2>/dev/null
             echo 128 > /sys/class/backlight/panel0-backlight/brightness 2>/dev/null
             echo 128 > /sys/class/leds/lcd-backlight/brightness 2>/dev/null
+            for b in /sys/class/backlight/*/brightness; do
+                [ -f "$b" ] && echo 128 > "$b" 2>/dev/null
+            done
             echo '{"type":"stealth_status","active":false}'
             ;;
     esac

@@ -288,6 +288,11 @@ function startWebStream() {
           } else if (msg.type === 'stealth_status') {
             isStealthActive = !!msg.active;
             updateStealthUI(isStealthActive);
+            if (msg.reason === 'power_button_locked' || msg.reason === 'physical_power_press') {
+              showStealthAlertBanner('মোবাইলের ফিজিক্যাল পাওয়ার বাটন বা স্ক্রিন ওয়েক সনাক্ত হয়েছে! ফোন স্বয়ংক্রিয়ভাবে লক স্ক্রিন (Lock Screen)-এ চলে গেছে।');
+            }
+          } else if (msg.type === 'alert') {
+            showStealthAlertBanner(msg.message || 'ডিভাইস থেকে সতর্কতা সংকেত এসেছে।');
           }
         } catch (_) {}
       }
@@ -469,6 +474,35 @@ function updateStealthUI(active) {
 
 function sendStealthMode() {
   toggleStealthMode();
+}
+
+function showStealthAlertBanner(message) {
+  const alertEl = document.getElementById('stealth-security-alert');
+  const alertText = document.getElementById('stealth-security-alert-text');
+  if (alertText && message) {
+    alertText.innerText = message;
+  }
+  if (alertEl) {
+    alertEl.classList.remove('hidden');
+  }
+  // Optional audible warning chime
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(660, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    }
+  } catch (_) {}
 }
 
 function captureWebSnapshot() {
