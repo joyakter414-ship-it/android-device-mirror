@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+*.log
+.wrangler/
+bin/platform-tools-darwin.zip
+bin/scrcpy-macos.tar.gz

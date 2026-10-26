@@ -1,0 +1,14 @@
+{
+  "name": "android-device-mirror-suite",
+  "version": "1.0.0",
+  "description": "Zero-App Android Remote Control, Blind-Tap Rescue, Wireless Mirror & Google Drive Backup Suite",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "deploy:worker": "cd worker && npx wrangler deploy"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}

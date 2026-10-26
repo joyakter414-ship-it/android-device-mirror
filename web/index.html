@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Device Mirror & Rescue Suite | Zero-App Confidential Controller</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-[#0b0f19] text-gray-100 min-h-screen font-sans selection:bg-cyan-500 selection:text-black">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-gray-800 bg-[#0f172a]/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+          <i class="fa-solid fa-mobile-screen-button text-xl text-white"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+            Device Mirror <span class="text-cyan-400 font-mono text-sm px-2 py-0.5 rounded-full bg-cyan-950/60 border border-cyan-800/40">PRO v5.0</span>
+          </h1>
+          <p class="text-xs text-gray-400">Zero-App & Confidential Android Broken Screen Recovery</p>
+        </div>
+      </div>
+
+      <!-- Cloud Status Badges -->
+      <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-2 bg-gray-900/80 border border-gray-800 px-3 py-1.5 rounded-lg text-xs">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-gray-400">Cloudflare:</span>
+          <span class="text-emerald-300 font-mono">phone-adb-bridge</span>
+        </div>
+        <div class="flex items-center space-x-2 bg-gray-900/80 border border-gray-800 px-3 py-1.5 rounded-lg text-xs">
+          <i class="fa-brands fa-google-drive text-amber-400"></i>
+          <span class="text-gray-400">Drive:</span>
+          <span class="text-gray-200 font-mono" id="drive-user-badge">joyakter414@gmail.com</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- Global Connection Banner -->
+    <div id="device-banner" class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 transition-all duration-300 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-4">
+        <div id="banner-status-icon" class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-2xl">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-3">
+            <h2 id="banner-title" class="text-xl font-bold text-white">Searching for Android Phone...</h2>
+            <span id="banner-badge" class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              DISCONNECTED
+            </span>
+          </div>
+          <p id="banner-desc" class="text-sm text-gray-400 mt-1">
+            Connect your phone using a USB cable. Make sure the phone is powered on.
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3 w-full md:w-auto">
+        <button id="btn-wake-phone" class="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-sm font-medium border border-gray-700 transition flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-power-off text-cyan-400"></i>
+          <span>Wake Screen</span>
+        </button>
+        <button id="btn-recheck-devices" class="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium shadow-lg shadow-cyan-600/20 transition flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-rotate"></i>
+          <span>Check Now</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2 Column Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+      <!-- Left Column: Blind Tap Visualizer (5 cols) -->
+      <div class="lg:col-span-5 space-y-6">
+        <div class="bg-gradient-to-b from-gray-900/90 to-[#0d1527] border border-gray-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+              <i class="fa-solid fa-hand-pointer text-cyan-400"></i>
+              <span>Blind-Tap Touch Assistant</span>
+            </h3>
+            <span class="text-xs bg-cyan-950 text-cyan-400 border border-cyan-800/40 px-2.5 py-1 rounded-full font-mono">
+              Display: Black
+            </span>
+          </div>
+
+          <p class="text-xs text-gray-400 mb-6 leading-relaxed">
+            Because the phone screen is completely black, Android is waiting for you to tap <strong>"Allow USB debugging"</strong>. Tap the pulsing target area on the right side:
+          </p>
+
+          <!-- Interactive Phone Mockup -->
+          <div class="relative w-64 h-[440px] mx-auto bg-black rounded-[42px] border-[6px] border-gray-800 shadow-2xl p-3 flex flex-col justify-between overflow-hidden">
+            <!-- Earpiece / Camera Hole -->
+            <div class="w-16 h-4 bg-gray-900 rounded-full mx-auto mb-2 flex items-center justify-center">
+              <div class="w-2 h-2 rounded-full bg-gray-800"></div>
+            </div>
+
+            <!-- Broken Black Screen with Simulated Dialog Overlay -->
+            <div id="phone-screen" class="relative flex-1 bg-[#05070d] rounded-[30px] border border-gray-900/80 p-3 overflow-hidden flex flex-col justify-end">
+              
+              <!-- Subtle cracked glass effect texture -->
+              <div class="absolute inset-0 opacity-15 pointer-events-none bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]"></div>
+
+              <!-- Invisible Prompt Mockup Container -->
+              <div class="relative w-full bg-gray-900/40 rounded-xl p-3 border border-gray-800/60 mb-6">
+                <div class="h-2 w-28 bg-gray-800 rounded mb-2"></div>
+                <div class="h-1.5 w-40 bg-gray-800/60 rounded mb-1"></div>
+                <div class="h-1.5 w-32 bg-gray-800/60 rounded mb-4"></div>
+
+                <!-- Dialog Buttons Area -->
+                <div class="flex justify-end space-x-3 items-center">
+                  <div class="text-[10px] text-gray-600 uppercase font-semibold">Cancel</div>
+                  <div class="text-[10px] text-cyan-400 uppercase font-bold px-2 py-0.5 rounded border border-cyan-500/20 bg-cyan-500/10">ALLOW</div>
+                </div>
+
+                <!-- Pulsing Interactive Target Indicator -->
+                <div class="absolute -right-2 -bottom-2 w-20 h-16 flex items-center justify-center">
+                  <div class="absolute w-14 h-14 rounded-full bg-cyan-400/20 animate-ping"></div>
+                  <div class="absolute w-10 h-10 rounded-full bg-cyan-500/40 border-2 border-cyan-300 flex items-center justify-center shadow-lg shadow-cyan-400/50 cursor-pointer">
+                    <i class="fa-solid fa-fingerprint text-white text-base"></i>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Instruction callout inside screen -->
+              <div class="text-center text-[11px] text-gray-500 font-mono py-1">
+                ~4-6 cm up from bottom right
+              </div>
+            </div>
+
+            <!-- Home indicator bar -->
+            <div class="w-24 h-1 bg-gray-800 rounded-full mx-auto mt-2"></div>
+          </div>
+
+          <!-- Step Instructions -->
+          <div class="mt-6 space-y-2 text-xs text-gray-400 bg-gray-950/60 border border-gray-800/80 p-3.5 rounded-xl">
+            <div class="flex items-start space-x-2">
+              <span class="text-cyan-400 font-bold">1.</span>
+              <span>Press Power button or Fingerprint sensor to wake screen.</span>
+            </div>
+            <div class="flex items-start space-x-2">
+              <span class="text-cyan-400 font-bold">2.</span>
+              <span>Unplug & re-insert USB cable to pop dialog to top of window stack.</span>
+            </div>
+            <div class="flex items-start space-x-2">
+              <span class="text-cyan-400 font-bold">3.</span>
+              <span>Tap 3-4 times in the lower-middle right quadrant.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Control Panels (7 cols) -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- Panel 1: Wi-Fi Wireless ADB & 60 FPS Mirroring -->
+        <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 shadow-xl">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                <i class="fa-solid fa-wifi"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-white text-base">Local Wi-Fi Mode (Ditch the Cable)</h3>
+                <p class="text-xs text-gray-400">Zero-latency 60 FPS display with mouse & keyboard</p>
+              </div>
+            </div>
+            <span id="wifi-ip-badge" class="font-mono text-xs text-gray-400 bg-gray-800 px-2.5 py-1 rounded-md">
+              IP: Not Connected
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            <button id="btn-switch-wireless" class="p-4 rounded-xl bg-gray-800/80 hover:bg-gray-800 border border-gray-700/60 hover:border-cyan-500/50 transition text-left group">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Step 1</span>
+                <i class="fa-solid fa-network-wired text-gray-500 group-hover:text-cyan-400 transition"></i>
+              </div>
+              <div class="font-bold text-sm text-white">Enable Wireless ADB</div>
+              <div class="text-xs text-gray-400 mt-1">Switches port 5555 & keep-awake</div>
+            </button>
+
+            <button id="btn-launch-mirror" class="p-4 rounded-xl bg-cyan-600/90 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-600/20 transition text-left group">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-cyan-200 uppercase tracking-wider">Step 2</span>
+                <i class="fa-solid fa-play text-white group-hover:scale-110 transition"></i>
+              </div>
+              <div class="font-bold text-sm text-white">Launch Screen Mirror</div>
+              <div class="text-xs text-cyan-100/80 mt-1">Starts Scrcpy 60 FPS Window</div>
+            </button>
+          </div>
+
+          <!-- Mirror Controls -->
+          <div class="mt-4 pt-4 border-t border-gray-800/80 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-400">
+            <div class="flex items-center space-x-4">
+              <label class="flex items-center space-x-1.5 cursor-pointer">
+                <input type="checkbox" id="chk-stay-awake" checked class="accent-cyan-500 rounded">
+                <span>Keep Phone Awake</span>
+              </label>
+              <label class="flex items-center space-x-1.5">
+                <span>FPS:</span>
+                <select id="sel-fps" class="bg-gray-800 border border-gray-700 rounded px-1.5 py-0.5 text-gray-200">
+                  <option value="60">60 FPS</option>
+                  <option value="30">30 FPS</option>
+                </select>
+              </label>
+            </div>
+            <div class="text-gray-500 font-mono text-[11px]">
+              Engine: scrcpy 5.0.1
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 2: Storage Rescue & Google Drive Sync -->
+        <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 shadow-xl">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-white text-base">Storage Rescue & Cloud Backup</h3>
+                <p class="text-xs text-gray-400">Save DCIM, WhatsApp, Photos locally and sync to Drive</p>
+              </div>
+            </div>
+            <span class="text-xs text-emerald-400 font-mono bg-emerald-950/60 border border-emerald-800/40 px-2.5 py-1 rounded-md">
+              100% Confidential
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            <button id="btn-backup-local" class="p-4 rounded-xl bg-gray-800/80 hover:bg-gray-800 border border-gray-700/60 hover:border-emerald-500/50 transition text-left group">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Local</span>
+                <i class="fa-solid fa-download text-gray-500 group-hover:text-emerald-400 transition"></i>
+              </div>
+              <div class="font-bold text-sm text-white">Rescue All Files to PC</div>
+              <div class="text-xs text-gray-400 mt-1">Pulls /sdcard/ to ~/Desktop/PhoneBackup</div>
+            </button>
+
+            <button id="btn-backup-drive" class="p-4 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 transition text-left group">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-emerald-100 uppercase tracking-wider">Google Drive</span>
+                <i class="fa-brands fa-google-drive text-white group-hover:scale-110 transition"></i>
+              </div>
+              <div class="font-bold text-sm text-white">Sync to Google Drive</div>
+              <div class="text-xs text-emerald-100/80 mt-1">Uploads to joyakter414@gmail.com</div>
+            </button>
+          </div>
+
+          <!-- Backup Status / Live Progress Display -->
+          <div id="backup-progress-box" class="mt-4 p-3 bg-gray-950/80 rounded-xl border border-gray-800/80 hidden">
+            <div class="flex items-center justify-between text-xs text-gray-300 mb-1">
+              <span id="backup-status-text">Pulling files from phone...</span>
+              <span id="backup-progress-pct" class="font-mono text-cyan-400">In Progress</span>
+            </div>
+            <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+              <div id="backup-progress-bar" class="bg-gradient-to-r from-cyan-500 to-emerald-500 h-full w-1/3 animate-pulse"></div>
+            </div>
+            <p id="backup-log" class="text-[11px] text-gray-500 font-mono mt-2 truncate">Starting adb pull...</p>
+          </div>
+        </div>
+
+        <!-- Panel 3: Zero-App Global Remote Internet Bridge (Cloudflare) -->
+        <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 shadow-xl">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400">
+                <i class="fa-solid fa-globe"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-white text-base">Global Remote Internet Bridge</h3>
+                <p class="text-xs text-gray-400">Control phone over 4G/5G mobile data from outside network</p>
+              </div>
+            </div>
+            <span class="text-xs text-orange-400 font-mono bg-orange-950/60 border border-orange-800/40 px-2.5 py-1 rounded-md">
+              Cloudflare Durable Objects
+            </span>
+          </div>
+
+          <!-- Configuration Fields -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-4">
+            <div>
+              <label class="text-gray-400 block mb-1">Cloudflare Worker Relay URL</label>
+              <input type="text" id="cfg-worker-url" value="wss://phone-adb-bridge.joyakter414.workers.dev" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-gray-200 font-mono text-xs focus:outline-none focus:border-cyan-500">
+            </div>
+            <div>
+              <label class="text-gray-400 block mb-1">Bridge Security Token</label>
+              <div class="flex space-x-1.5">
+                <input type="text" id="cfg-token" value="sk_phone_bridge_8f3a9d2c1e7b45" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-gray-200 font-mono text-xs focus:outline-none focus:border-cyan-500">
+                <button id="btn-new-token" class="px-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg border border-gray-700" title="Generate New Token">
+                  <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button id="btn-bridge-setup-phone" class="p-3 rounded-xl bg-gray-800 hover:bg-gray-700/80 border border-gray-700 text-left transition">
+              <span class="text-[10px] text-orange-400 font-bold block uppercase">Step 1</span>
+              <div class="font-semibold text-xs text-white mt-0.5">Inject Phone Bridge</div>
+              <div class="text-[11px] text-gray-400">Pushes static websocat</div>
+            </button>
+
+            <button id="btn-bridge-start-pc" class="p-3 rounded-xl bg-gray-800 hover:bg-gray-700/80 border border-gray-700 text-left transition">
+              <span class="text-[10px] text-orange-400 font-bold block uppercase">Step 2</span>
+              <div class="font-semibold text-xs text-white mt-0.5" id="txt-pc-bridge-btn">Connect PC Bridge</div>
+              <div class="text-[11px] text-gray-400">Bridges 127.0.0.1:5556</div>
+            </button>
+
+            <button id="btn-bridge-launch-mirror" class="p-3 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white shadow-lg shadow-orange-600/20 text-left transition">
+              <span class="text-[10px] text-orange-200 font-bold block uppercase">Step 3</span>
+              <div class="font-semibold text-xs text-white mt-0.5">Remote Mirror</div>
+              <div class="text-[11px] text-orange-100">Live 60 FPS over 4G/5G</div>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 1-Click Desktop Scripts Section -->
+    <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 shadow-xl">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-bold text-white text-base">⚡ 1-Click Standalone Desktop Scripts</h3>
+          <p class="text-xs text-gray-400">You can also double-click these files directly from your Desktop anytime without opening a terminal</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
+        <div class="p-4 bg-gray-950/70 border border-gray-800 rounded-xl">
+          <div class="text-cyan-400 font-bold mb-1 flex items-center space-x-1.5">
+            <i class="fa-solid fa-bolt"></i>
+            <span>Wi-Fi Mirror</span>
+          </div>
+          <p class="text-gray-400 text-[11px] font-sans mb-3">Double click to connect wirelessly and launch scrcpy immediately.</p>
+          <div class="text-gray-300 bg-gray-900 p-2 rounded border border-gray-800">
+            scripts/mac/2-Switch-Wireless-WiFi.command
+          </div>
+        </div>
+
+        <div class="p-4 bg-gray-950/70 border border-gray-800 rounded-xl">
+          <div class="text-emerald-400 font-bold mb-1 flex items-center space-x-1.5">
+            <i class="fa-solid fa-hard-drive"></i>
+            <span>Local & Drive Backup</span>
+          </div>
+          <p class="text-gray-400 text-[11px] font-sans mb-3">Extracts all storage files directly to your Mac and Google Drive.</p>
+          <div class="text-gray-300 bg-gray-900 p-2 rounded border border-gray-800">
+            scripts/mac/4-Backup-Local-Files.command
+          </div>
+        </div>
+
+        <div class="p-4 bg-gray-950/70 border border-gray-800 rounded-xl">
+          <div class="text-orange-400 font-bold mb-1 flex items-center space-x-1.5">
+            <i class="fa-solid fa-cloud"></i>
+            <span>Cloudflare Remote</span>
+          </div>
+          <p class="text-gray-400 text-[11px] font-sans mb-3">Bridges through Cloudflare Worker over 4G/5G mobile data.</p>
+          <div class="text-gray-300 bg-gray-900 p-2 rounded border border-gray-800">
+            scripts/mac/6-Remote-Internet-Bridge.command
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Audio Chime Alert for Authorization Success -->
+  <audio id="audio-success" preload="auto">
+    <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+  </audio>
+
+  <script src="app.js"></script>
+</body>
+</html>
