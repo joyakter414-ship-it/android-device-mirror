@@ -130,6 +130,34 @@ while IFS= read -r line; do
             TXT=$(echo "$line" | sed -n 's/.*"text":[ ]*"\\([^"]*\\)".*/\\1/p')
             [ -n "$TXT" ] && input text "$TXT" 2>/dev/null
             ;;
+        *"audio_snap"*)
+            rm -f /data/local/tmp/audio_snap.* 2>/dev/null
+            AUDIO_FILE=""
+            MIME="audio/wav"
+
+            if command -v termux-microphone-record >/dev/null 2>&1; then
+                termux-microphone-record -d 4 -f /data/local/tmp/audio_snap.m4a >/dev/null 2>&1
+                AUDIO_FILE="/data/local/tmp/audio_snap.m4a"
+                MIME="audio/mp4"
+            elif [ -x /system/bin/tinycap ]; then
+                /system/bin/tinycap /data/local/tmp/audio_snap.wav -c 1 -r 16000 -t 4 >/dev/null 2>&1
+                AUDIO_FILE="/data/local/tmp/audio_snap.wav"
+                MIME="audio/wav"
+            elif [ -x /system/xbin/tinycap ]; then
+                /system/xbin/tinycap /data/local/tmp/audio_snap.wav -c 1 -r 16000 -t 4 >/dev/null 2>&1
+                AUDIO_FILE="/data/local/tmp/audio_snap.wav"
+                MIME="audio/wav"
+            fi
+
+            if [ -n "$AUDIO_FILE" ] && [ -s "$AUDIO_FILE" ]; then
+                B64=$(toybox base64 "$AUDIO_FILE" 2>/dev/null || base64 "$AUDIO_FILE" 2>/dev/null)
+                CLEAN_B64=$(echo "$B64" | tr -d '\r\n')
+                echo "{\"type\":\"audio_snap\",\"mime\":\"$MIME\",\"data\":\"$CLEAN_B64\"}"
+                rm -f "$AUDIO_FILE" 2>/dev/null
+            else
+                echo "{\"type\":\"audio_snap\",\"error\":\"Audio recorder not ready on device (Termux:API or tinycap needed)\"}"
+            fi
+            ;;
         *"stealth_off"*)
             settings put system screen_brightness 0 2>/dev/null
             echo 0 > /sys/class/backlight/panel0-backlight/brightness 2>/dev/null

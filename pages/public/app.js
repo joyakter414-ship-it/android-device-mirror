@@ -281,6 +281,8 @@ function startWebStream() {
               if (screenCtx) screenCtx.drawImage(img, 0, 0);
             };
             img.src = 'data:image/png;base64,' + msg.data;
+          } else if (msg.type === 'audio_snap') {
+            handleIncomingAudioSnap(msg);
           }
         } catch (_) {}
       }
@@ -426,6 +428,60 @@ function captureWebSnapshot() {
     a.href = screenCanvas.toDataURL('image/png');
     a.download = `hector_snapshot_${Date.now()}.png`;
     a.click();
+  }
+}
+
+// ============================================================
+// Live Audio Snap & Playback Engine
+// ============================================================
+let activeAudioClip = null;
+
+function captureAudioSnapshot() {
+  const btn = document.getElementById('btn-audio-snap');
+  const icon = document.getElementById('icon-audio-snap');
+  const text = document.getElementById('text-audio-snap');
+
+  if (!isStreaming) {
+    startWebStream();
+  }
+
+  if (btn) {
+    btn.classList.add('border-emerald-500', 'bg-emerald-950/80');
+    if (icon) icon.className = 'fa-solid fa-spinner fa-spin text-emerald-400';
+    if (text) text.innerText = 'Listening...';
+  }
+
+  sendWebCommand({ action: 'audio_snap' });
+}
+
+function handleIncomingAudioSnap(msg) {
+  const btn = document.getElementById('btn-audio-snap');
+  const icon = document.getElementById('icon-audio-snap');
+  const text = document.getElementById('text-audio-snap');
+
+  if (btn) {
+    btn.classList.remove('border-emerald-500', 'bg-emerald-950/80');
+    if (icon) icon.className = 'fa-solid fa-microphone-lines text-emerald-400';
+    if (text) text.innerText = 'Audio Snap';
+  }
+
+  if (msg.data) {
+    const audioUrl = `data:${msg.mime || 'audio/wav'};base64,${msg.data}`;
+    if (activeAudioClip) {
+      try { activeAudioClip.pause(); } catch (_) {}
+    }
+    activeAudioClip = new Audio(audioUrl);
+    activeAudioClip.play().catch(e => {
+      console.warn('Audio playback error:', e);
+    });
+
+    const banner = document.getElementById('audio-playback-banner');
+    if (banner) {
+      banner.classList.remove('hidden');
+      setTimeout(() => { banner.classList.add('hidden'); }, 6000);
+    }
+  } else if (msg.error) {
+    alert('Audio Snap: ' + msg.error);
   }
 }
 

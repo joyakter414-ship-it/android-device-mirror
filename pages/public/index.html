@@ -222,7 +222,7 @@
           </div>
 
           <!-- Web Controller Action Toolbar -->
-          <div class="mt-4 pt-3 border-t border-gray-800/80 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div class="mt-4 pt-3 border-t border-gray-800/80 grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
             <button onclick="toggleWebStream()" id="btn-web-stream" class="p-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold flex items-center justify-center space-x-1.5 transition shadow-lg shadow-cyan-600/20">
               <i class="fa-solid fa-play" id="icon-web-stream"></i>
               <span id="text-web-stream">Start Stream</span>
@@ -239,6 +239,20 @@
               <i class="fa-solid fa-camera text-cyan-400"></i>
               <span>Snapshot</span>
             </button>
+            <button onclick="captureAudioSnapshot()" id="btn-audio-snap" title="Listen to 4s live audio from phone microphone" class="p-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 font-medium flex items-center justify-center space-x-1.5 transition">
+              <i class="fa-solid fa-microphone-lines text-emerald-400" id="icon-audio-snap"></i>
+              <span id="text-audio-snap">Audio Snap</span>
+            </button>
+          </div>
+
+          <!-- Live Audio Playback Banner (Active when audio is playing) -->
+          <div id="audio-playback-banner" class="hidden mt-2.5 bg-emerald-950/70 border border-emerald-800/80 rounded-xl px-3 py-2 text-xs text-emerald-300 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              <i class="fa-solid fa-volume-high text-emerald-400"></i>
+              <span class="font-medium">Playing Live Phone Audio...</span>
+            </div>
+            <span class="text-[10px] text-emerald-400/80 font-mono">Microphone 4s</span>
           </div>
 
           <!-- Natural Touch & Click Hint -->
