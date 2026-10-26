@@ -578,15 +578,19 @@ function startLiveCameraStream() {
   const btn = document.getElementById('btn-cam-stream');
   const icon = document.getElementById('icon-cam-stream');
   const text = document.getElementById('text-cam-stream');
-  const camContainer = document.getElementById('live-cam-container');
+  const camImg = document.getElementById('live-cam-stream-img');
+  const camStandby = document.getElementById('cam-standby-overlay');
+  const camBadge = document.getElementById('cam-status-badge');
 
   if (btn) {
-    btn.className = 'p-2.5 rounded-xl bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-500/80 text-cyan-200 font-semibold flex items-center justify-center space-x-1.5 transition shadow-lg shadow-cyan-950/40';
-    if (icon) icon.className = 'fa-solid fa-video text-cyan-400 animate-pulse';
+    btn.className = 'p-2.5 rounded-xl bg-red-950/90 hover:bg-red-900 border border-red-700/80 text-red-200 font-semibold flex items-center justify-center space-x-1.5 transition shadow';
+    if (icon) icon.className = 'fa-solid fa-video text-red-400 animate-pulse';
     if (text) text.innerText = 'Stop Cam';
   }
 
-  if (camContainer) camContainer.classList.remove('hidden');
+  if (camImg) camImg.classList.remove('hidden');
+  if (camStandby) camStandby.classList.add('hidden');
+  if (camBadge) camBadge.className = 'text-xs bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 px-2.5 py-0.5 rounded-full font-mono flex items-center gap-1.5';
 
   sendWebCommand({ action: 'cam_stream_start', cam_id: currentCamId });
 }
@@ -597,15 +601,19 @@ function stopLiveCameraStream() {
   const btn = document.getElementById('btn-cam-stream');
   const icon = document.getElementById('icon-cam-stream');
   const text = document.getElementById('text-cam-stream');
-  const camContainer = document.getElementById('live-cam-container');
+  const camImg = document.getElementById('live-cam-stream-img');
+  const camStandby = document.getElementById('cam-standby-overlay');
+  const camBadge = document.getElementById('cam-status-badge');
 
   if (btn) {
-    btn.className = 'p-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 font-medium flex items-center justify-center space-x-1.5 transition';
-    if (icon) icon.className = 'fa-solid fa-video text-cyan-400';
-    if (text) text.innerText = 'Live Cam';
+    btn.className = 'p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center justify-center space-x-1.5 transition shadow';
+    if (icon) icon.className = 'fa-solid fa-video text-xs';
+    if (text) text.innerText = 'Start Cam';
   }
 
-  if (camContainer) camContainer.classList.add('hidden');
+  if (camImg) camImg.classList.add('hidden');
+  if (camStandby) camStandby.classList.remove('hidden');
+  if (camBadge) camBadge.className = 'text-xs bg-gray-900 text-gray-400 border border-gray-800 px-2.5 py-0.5 rounded-full font-mono flex items-center gap-1.5';
 
   // If live camera audio was also on, turn it off to save phone battery
   if (isAudioStreaming) {
