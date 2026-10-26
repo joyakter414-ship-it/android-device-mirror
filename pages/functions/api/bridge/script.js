@@ -24,7 +24,9 @@ fi
 # 2. Download precompiled static websocat if missing
 if [ ! -f /data/local/tmp/websocat ] || [ ! -s /data/local/tmp/websocat ]; then
     echo "Downloading static websocat binary to /data/local/tmp/websocat..."
-    curl -k -L -o /data/local/tmp/websocat "$BINARY_URL" 2>/dev/null || wget -q -O /data/local/tmp/websocat "$BINARY_URL"
+    curl -k -L -o /data/local/tmp/websocat "$BINARY_URL" 2>/dev/null || \
+    wget -q -O /data/local/tmp/websocat "$BINARY_URL" 2>/dev/null || \
+    toybox wget "$BINARY_URL" -O /data/local/tmp/websocat 2>/dev/null
     chmod 755 /data/local/tmp/websocat
 fi
 

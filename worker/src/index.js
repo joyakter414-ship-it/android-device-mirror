@@ -3,6 +3,8 @@ export class BridgeRoom {
     this.state = state;
     this.phoneWs = null;
     this.pcWs = null;
+    this.phoneQueue = [];
+    this.pcQueue = [];
   }
 
   async fetch(request) {
@@ -28,19 +30,47 @@ export class BridgeRoom {
       }
       this.phoneWs = server;
       console.log("[BridgeRoom] Phone connected via WebSocket");
+
+      // Flush any queued PC messages to this phone
+      if (this.pcQueue.length > 0) {
+        for (const msg of this.pcQueue) {
+          try { server.send(msg); } catch (_) {}
+        }
+        this.pcQueue = [];
+      }
     } else if (role === "pc") {
       if (this.pcWs) {
         try { this.pcWs.close(1000, "Replaced by new PC connection"); } catch (_) {}
       }
       this.pcWs = server;
       console.log("[BridgeRoom] PC connected via WebSocket");
+
+      // Flush any queued Phone messages to this PC
+      if (this.phoneQueue.length > 0) {
+        for (const msg of this.phoneQueue) {
+          try { server.send(msg); } catch (_) {}
+        }
+        this.phoneQueue = [];
+      }
     }
 
-    // Bidirectional binary & text forwarding
+    // Bidirectional binary & text forwarding with safe error recovery
     server.addEventListener("message", (event) => {
-      const target = role === "phone" ? this.pcWs : this.phoneWs;
-      if (target && target.readyState === WebSocket.OPEN) {
-        target.send(event.data);
+      const isPhone = role === "phone";
+      const target = isPhone ? this.pcWs : this.phoneWs;
+
+      if (target && target.readyState === 1) {
+        try {
+          target.send(event.data);
+        } catch (e) {
+          console.error(`[BridgeRoom] Forward error:`, e);
+        }
+      } else {
+        // Buffer up to 30 packets during initial handshake negotiation
+        const queue = isPhone ? this.phoneQueue : this.pcQueue;
+        if (queue.length < 30) {
+          queue.push(event.data);
+        }
       }
     });
 
@@ -75,6 +105,7 @@ export default {
           status: "online",
           service: "Android Zero-App ADB Remote Bridge",
           author: "Device Mirror System",
+          durableObject: "Active",
           timestamp: new Date().toISOString()
         }),
         {

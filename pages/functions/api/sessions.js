@@ -28,7 +28,12 @@ export async function onRequestGet(context) {
 export async function onRequestPost(context) {
   try {
     const { request, env } = context;
-    const body = await request.json();
+    let body = {};
+    try {
+      body = await request.json();
+    } catch (_) {
+      body = {};
+    }
     const id = body.id || 'sess_' + Date.now();
     const model = body.model || 'Android Device';
     const abi = body.abi || 'arm64-v8a';
