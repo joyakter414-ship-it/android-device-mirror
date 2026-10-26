@@ -281,8 +281,8 @@ function startWebStream() {
               if (screenCtx) screenCtx.drawImage(img, 0, 0);
             };
             img.src = 'data:image/png;base64,' + msg.data;
-          } else if (msg.type === 'audio_snap') {
-            handleIncomingAudioSnap(msg);
+          } else if (msg.type === 'audio_chunk') {
+            handleIncomingAudioChunk(msg);
           }
         } catch (_) {}
       }
@@ -303,6 +303,9 @@ function startWebStream() {
 }
 
 function stopWebStream() {
+  if (isAudioStreaming) {
+    stopLiveAudioStream();
+  }
   isStreaming = false;
   if (liveWs) {
     try {
@@ -432,57 +435,103 @@ function captureWebSnapshot() {
 }
 
 // ============================================================
-// Live Audio Snap & Playback Engine
+// Continuous Live Audio Stream Engine (Plays Until Clicked OFF)
 // ============================================================
-let activeAudioClip = null;
+let isAudioStreaming = false;
+const audioQueue = [];
+let isPlayingAudioQueue = false;
+let currentPlayingAudio = null;
 
-function captureAudioSnapshot() {
-  const btn = document.getElementById('btn-audio-snap');
-  const icon = document.getElementById('icon-audio-snap');
-  const text = document.getElementById('text-audio-snap');
+function toggleLiveAudioStream() {
+  if (isAudioStreaming) {
+    stopLiveAudioStream();
+  } else {
+    startLiveAudioStream();
+  }
+}
 
+function startLiveAudioStream() {
+  isAudioStreaming = true;
   if (!isStreaming) {
     startWebStream();
   }
 
+  const btn = document.getElementById('btn-audio-stream');
+  const icon = document.getElementById('icon-audio-stream');
+  const text = document.getElementById('text-audio-stream');
+  const banner = document.getElementById('audio-playback-banner');
+
   if (btn) {
-    btn.classList.add('border-emerald-500', 'bg-emerald-950/80');
-    if (icon) icon.className = 'fa-solid fa-spinner fa-spin text-emerald-400';
-    if (text) text.innerText = 'Listening...';
+    btn.className = 'p-2.5 rounded-xl bg-red-950/90 hover:bg-red-900 border border-red-700/80 text-red-200 font-semibold flex items-center justify-center space-x-1.5 transition shadow-lg shadow-red-950/40';
+    if (icon) icon.className = 'fa-solid fa-microphone-slash text-red-400 animate-pulse';
+    if (text) text.innerText = 'Stop Audio';
   }
 
-  sendWebCommand({ action: 'audio_snap' });
+  if (banner) banner.classList.remove('hidden');
+
+  sendWebCommand({ action: 'audio_stream_start' });
 }
 
-function handleIncomingAudioSnap(msg) {
-  const btn = document.getElementById('btn-audio-snap');
-  const icon = document.getElementById('icon-audio-snap');
-  const text = document.getElementById('text-audio-snap');
+function stopLiveAudioStream() {
+  isAudioStreaming = false;
+  audioQueue.length = 0; // Clear queue
+  if (currentPlayingAudio) {
+    try { currentPlayingAudio.pause(); } catch (_) {}
+    currentPlayingAudio = null;
+  }
+  isPlayingAudioQueue = false;
+
+  const btn = document.getElementById('btn-audio-stream');
+  const icon = document.getElementById('icon-audio-stream');
+  const text = document.getElementById('text-audio-stream');
+  const banner = document.getElementById('audio-playback-banner');
 
   if (btn) {
-    btn.classList.remove('border-emerald-500', 'bg-emerald-950/80');
+    btn.className = 'p-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 font-medium flex items-center justify-center space-x-1.5 transition';
     if (icon) icon.className = 'fa-solid fa-microphone-lines text-emerald-400';
-    if (text) text.innerText = 'Audio Snap';
+    if (text) text.innerText = 'Live Audio';
   }
 
-  if (msg.data) {
-    const audioUrl = `data:${msg.mime || 'audio/wav'};base64,${msg.data}`;
-    if (activeAudioClip) {
-      try { activeAudioClip.pause(); } catch (_) {}
-    }
-    activeAudioClip = new Audio(audioUrl);
-    activeAudioClip.play().catch(e => {
-      console.warn('Audio playback error:', e);
-    });
+  if (banner) banner.classList.add('hidden');
 
-    const banner = document.getElementById('audio-playback-banner');
-    if (banner) {
-      banner.classList.remove('hidden');
-      setTimeout(() => { banner.classList.add('hidden'); }, 6000);
-    }
-  } else if (msg.error) {
-    alert('Audio Snap: ' + msg.error);
+  sendWebCommand({ action: 'audio_stream_stop' });
+}
+
+function handleIncomingAudioChunk(msg) {
+  if (!isAudioStreaming || !msg.data) return;
+
+  const audioUrl = `data:${msg.mime || 'audio/wav'};base64,${msg.data}`;
+  const chunkAudio = new Audio(audioUrl);
+
+  // Buffer maximum 3 chunks to maintain real-time low latency
+  if (audioQueue.length < 3) {
+    audioQueue.push(chunkAudio);
   }
+
+  if (!isPlayingAudioQueue) {
+    playNextAudioQueueItem();
+  }
+}
+
+function playNextAudioQueueItem() {
+  if (!isAudioStreaming || audioQueue.length === 0) {
+    isPlayingAudioQueue = false;
+    currentPlayingAudio = null;
+    return;
+  }
+
+  isPlayingAudioQueue = true;
+  currentPlayingAudio = audioQueue.shift();
+
+  currentPlayingAudio.onended = () => {
+    playNextAudioQueueItem();
+  };
+  currentPlayingAudio.onerror = () => {
+    playNextAudioQueueItem();
+  };
+  currentPlayingAudio.play().catch(() => {
+    playNextAudioQueueItem();
+  });
 }
 
 // Init

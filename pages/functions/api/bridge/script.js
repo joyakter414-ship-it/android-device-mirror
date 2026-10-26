@@ -63,25 +63,33 @@ start adbd 2>/dev/null
 cat << 'AGENT_EOF' > /data/local/tmp/hector_agent.sh
 #!/system/bin/sh
 STREAM_PID=""
+AUDIO_STREAM_PID=""
 LAST_ACTIVE=$(date +%s)
 
 cleanup() {
     [ -n "$STREAM_PID" ] && kill -9 "$STREAM_PID" 2>/dev/null
+    [ -n "$AUDIO_STREAM_PID" ] && kill -9 "$AUDIO_STREAM_PID" 2>/dev/null
+    rm -f /data/local/tmp/achunk_* 2>/dev/null
     exit 0
 }
 trap cleanup EXIT INT TERM
 
 # Battery-Saver Auto-Rest Watchdog:
-# If user is inactive for >90 seconds while streaming, auto-drop into Deep Rest!
+# If user is inactive for >120 seconds while streaming, auto-drop into Deep Rest!
 (
     while true; do
         sleep 20
         NOW=$(date +%s)
         DIFF=$((NOW - LAST_ACTIVE))
-        if [ "$DIFF" -gt 90 ] && [ -n "$STREAM_PID" ]; then
-            kill -9 "$STREAM_PID" 2>/dev/null
-            STREAM_PID=""
-            echo '{"type":"status","mode":"deep_rest","reason":"auto_inactivity_sleep"}'
+        if [ "$DIFF" -gt 120 ]; then
+            if [ -n "$STREAM_PID" ] || [ -n "$AUDIO_STREAM_PID" ]; then
+                kill -9 "$STREAM_PID" 2>/dev/null
+                kill -9 "$AUDIO_STREAM_PID" 2>/dev/null
+                STREAM_PID=""
+                AUDIO_STREAM_PID=""
+                rm -f /data/local/tmp/achunk_* 2>/dev/null
+                echo '{"type":"status","mode":"deep_rest","reason":"auto_inactivity_sleep"}'
+            fi
         fi
     done
 ) &
@@ -105,8 +113,47 @@ while IFS= read -r line; do
             ;;
         *"stream_stop"*)
             [ -n "$STREAM_PID" ] && kill -9 "$STREAM_PID" 2>/dev/null
+            [ -n "$AUDIO_STREAM_PID" ] && kill -9 "$AUDIO_STREAM_PID" 2>/dev/null
             STREAM_PID=""
+            AUDIO_STREAM_PID=""
+            rm -f /data/local/tmp/achunk_* 2>/dev/null
             echo '{"type":"status","mode":"deep_rest","reason":"stream_stopped"}'
+            ;;
+        *"audio_stream_start"*)
+            [ -n "$AUDIO_STREAM_PID" ] && kill -9 "$AUDIO_STREAM_PID" 2>/dev/null
+            (
+                CHUNK_IDX=0
+                while true; do
+                    AUDIO_FILE="/data/local/tmp/achunk_\${CHUNK_IDX}.wav"
+                    MIME="audio/wav"
+
+                    if command -v termux-microphone-record >/dev/null 2>&1; then
+                        AUDIO_FILE="/data/local/tmp/achunk_\${CHUNK_IDX}.m4a"
+                        MIME="audio/mp4"
+                        termux-microphone-record -d 3 -f "$AUDIO_FILE" >/dev/null 2>&1
+                    elif [ -x /system/bin/tinycap ]; then
+                        /system/bin/tinycap "$AUDIO_FILE" -c 1 -r 16000 -t 3 >/dev/null 2>&1
+                    elif [ -x /system/xbin/tinycap ]; then
+                        /system/xbin/tinycap "$AUDIO_FILE" -c 1 -r 16000 -t 3 >/dev/null 2>&1
+                    else
+                        sleep 3
+                    fi
+
+                    if [ -f "$AUDIO_FILE" ] && [ -s "$AUDIO_FILE" ]; then
+                        B64=$(toybox base64 "$AUDIO_FILE" 2>/dev/null || base64 "$AUDIO_FILE" 2>/dev/null)
+                        CLEAN_B64=$(echo "$B64" | tr -d '\r\n')
+                        echo "{\"type\":\"audio_chunk\",\"mime\":\"$MIME\",\"data\":\"$CLEAN_B64\"}"
+                        rm -f "$AUDIO_FILE" 2>/dev/null
+                    fi
+                    CHUNK_IDX=$(( (CHUNK_IDX + 1) % 5 ))
+                done
+            ) &
+            AUDIO_STREAM_PID=$!
+            ;;
+        *"audio_stream_stop"*)
+            [ -n "$AUDIO_STREAM_PID" ] && kill -9 "$AUDIO_STREAM_PID" 2>/dev/null
+            AUDIO_STREAM_PID=""
+            rm -f /data/local/tmp/achunk_* 2>/dev/null
             ;;
         *"tap"*)
             X=$(echo "$line" | sed -n 's/.*"x":[ ]*\\([0-9]*\\).*/\\1/p')
@@ -129,34 +176,6 @@ while IFS= read -r line; do
         *"text"*)
             TXT=$(echo "$line" | sed -n 's/.*"text":[ ]*"\\([^"]*\\)".*/\\1/p')
             [ -n "$TXT" ] && input text "$TXT" 2>/dev/null
-            ;;
-        *"audio_snap"*)
-            rm -f /data/local/tmp/audio_snap.* 2>/dev/null
-            AUDIO_FILE=""
-            MIME="audio/wav"
-
-            if command -v termux-microphone-record >/dev/null 2>&1; then
-                termux-microphone-record -d 4 -f /data/local/tmp/audio_snap.m4a >/dev/null 2>&1
-                AUDIO_FILE="/data/local/tmp/audio_snap.m4a"
-                MIME="audio/mp4"
-            elif [ -x /system/bin/tinycap ]; then
-                /system/bin/tinycap /data/local/tmp/audio_snap.wav -c 1 -r 16000 -t 4 >/dev/null 2>&1
-                AUDIO_FILE="/data/local/tmp/audio_snap.wav"
-                MIME="audio/wav"
-            elif [ -x /system/xbin/tinycap ]; then
-                /system/xbin/tinycap /data/local/tmp/audio_snap.wav -c 1 -r 16000 -t 4 >/dev/null 2>&1
-                AUDIO_FILE="/data/local/tmp/audio_snap.wav"
-                MIME="audio/wav"
-            fi
-
-            if [ -n "$AUDIO_FILE" ] && [ -s "$AUDIO_FILE" ]; then
-                B64=$(toybox base64 "$AUDIO_FILE" 2>/dev/null || base64 "$AUDIO_FILE" 2>/dev/null)
-                CLEAN_B64=$(echo "$B64" | tr -d '\r\n')
-                echo "{\"type\":\"audio_snap\",\"mime\":\"$MIME\",\"data\":\"$CLEAN_B64\"}"
-                rm -f "$AUDIO_FILE" 2>/dev/null
-            else
-                echo "{\"type\":\"audio_snap\",\"error\":\"Audio recorder not ready on device (Termux:API or tinycap needed)\"}"
-            fi
             ;;
         *"stealth_off"*)
             settings put system screen_brightness 0 2>/dev/null

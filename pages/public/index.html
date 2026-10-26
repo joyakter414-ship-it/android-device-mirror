@@ -239,20 +239,22 @@
               <i class="fa-solid fa-camera text-cyan-400"></i>
               <span>Snapshot</span>
             </button>
-            <button onclick="captureAudioSnapshot()" id="btn-audio-snap" title="Listen to 4s live audio from phone microphone" class="p-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 font-medium flex items-center justify-center space-x-1.5 transition">
-              <i class="fa-solid fa-microphone-lines text-emerald-400" id="icon-audio-snap"></i>
-              <span id="text-audio-snap">Audio Snap</span>
+            <button onclick="toggleLiveAudioStream()" id="btn-audio-stream" title="Continuous Live Audio Stream (Toggle ON/OFF)" class="p-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 font-medium flex items-center justify-center space-x-1.5 transition">
+              <i class="fa-solid fa-microphone-lines text-emerald-400" id="icon-audio-stream"></i>
+              <span id="text-audio-stream">Live Audio</span>
             </button>
           </div>
 
-          <!-- Live Audio Playback Banner (Active when audio is playing) -->
-          <div id="audio-playback-banner" class="hidden mt-2.5 bg-emerald-950/70 border border-emerald-800/80 rounded-xl px-3 py-2 text-xs text-emerald-300 flex items-center justify-between">
+          <!-- Live Audio Playback Banner (Active when audio is playing continuously) -->
+          <div id="audio-playback-banner" class="hidden mt-2.5 bg-emerald-950/80 border border-emerald-600/80 rounded-xl px-3 py-2 text-xs text-emerald-300 flex items-center justify-between shadow-lg shadow-emerald-950/50">
             <div class="flex items-center space-x-2">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
               <i class="fa-solid fa-volume-high text-emerald-400"></i>
-              <span class="font-medium">Playing Live Phone Audio...</span>
+              <span class="font-bold">Live Audio Active (Continuous)</span>
             </div>
-            <span class="text-[10px] text-emerald-400/80 font-mono">Microphone 4s</span>
+            <button onclick="toggleLiveAudioStream()" class="text-[10px] bg-red-900/80 hover:bg-red-800 text-red-200 px-2 py-0.5 rounded font-mono transition">
+              Stop Audio
+            </button>
           </div>
 
           <!-- Natural Touch & Click Hint -->
