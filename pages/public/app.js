@@ -283,6 +283,8 @@ function startWebStream() {
             img.src = 'data:image/png;base64,' + msg.data;
           } else if (msg.type === 'audio_chunk') {
             handleIncomingAudioChunk(msg);
+          } else if (msg.type === 'cam_frame') {
+            handleIncomingCameraFrame(msg);
           }
         } catch (_) {}
       }
@@ -305,6 +307,9 @@ function startWebStream() {
 function stopWebStream() {
   if (isAudioStreaming) {
     stopLiveAudioStream();
+  }
+  if (isCamStreaming) {
+    stopLiveCameraStream();
   }
   isStreaming = false;
   if (liveWs) {
@@ -532,6 +537,91 @@ function playNextAudioQueueItem() {
   currentPlayingAudio.play().catch(() => {
     playNextAudioQueueItem();
   });
+}
+
+// ============================================================
+// Live Camera Casting & Anti-Theft Cam Snap Engine
+// ============================================================
+let isCamStreaming = false;
+let currentCamId = 1; // 1 = Front Camera (Selfie / Anti-Theft), 0 = Back Camera
+
+function toggleLiveCameraStream() {
+  if (isCamStreaming) {
+    stopLiveCameraStream();
+  } else {
+    startLiveCameraStream();
+  }
+}
+
+function startLiveCameraStream() {
+  isCamStreaming = true;
+  if (!isStreaming) {
+    startWebStream();
+  }
+
+  const btn = document.getElementById('btn-cam-stream');
+  const icon = document.getElementById('icon-cam-stream');
+  const text = document.getElementById('text-cam-stream');
+  const camContainer = document.getElementById('live-cam-container');
+
+  if (btn) {
+    btn.className = 'p-2.5 rounded-xl bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-500/80 text-cyan-200 font-semibold flex items-center justify-center space-x-1.5 transition shadow-lg shadow-cyan-950/40';
+    if (icon) icon.className = 'fa-solid fa-video text-cyan-400 animate-pulse';
+    if (text) text.innerText = 'Stop Cam';
+  }
+
+  if (camContainer) camContainer.classList.remove('hidden');
+
+  sendWebCommand({ action: 'cam_stream_start', cam_id: currentCamId });
+}
+
+function stopLiveCameraStream() {
+  isCamStreaming = false;
+
+  const btn = document.getElementById('btn-cam-stream');
+  const icon = document.getElementById('icon-cam-stream');
+  const text = document.getElementById('text-cam-stream');
+  const camContainer = document.getElementById('live-cam-container');
+
+  if (btn) {
+    btn.className = 'p-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 font-medium flex items-center justify-center space-x-1.5 transition';
+    if (icon) icon.className = 'fa-solid fa-video text-cyan-400';
+    if (text) text.innerText = 'Live Cam';
+  }
+
+  if (camContainer) camContainer.classList.add('hidden');
+
+  sendWebCommand({ action: 'cam_stream_stop' });
+}
+
+function switchCameraFacing() {
+  currentCamId = currentCamId === 1 ? 0 : 1;
+  const badge = document.getElementById('cam-facing-badge');
+  if (badge) {
+    badge.innerText = currentCamId === 1 ? 'Front Cam (Live)' : 'Back Cam (Live)';
+  }
+
+  sendWebCommand({ action: 'cam_switch', cam_id: currentCamId });
+}
+
+function handleIncomingCameraFrame(msg) {
+  if (!isCamStreaming || !msg.data) return;
+  const imgEl = document.getElementById('live-cam-stream-img');
+  if (imgEl) {
+    imgEl.src = 'data:image/jpeg;base64,' + msg.data;
+  }
+}
+
+function captureCameraSnapshot() {
+  const imgEl = document.getElementById('live-cam-stream-img');
+  if (imgEl && imgEl.src && imgEl.src.startsWith('data:')) {
+    const a = document.createElement('a');
+    a.href = imgEl.src;
+    a.download = `hector_cam_snap_${currentCamId === 1 ? 'front' : 'back'}_${Date.now()}.jpg`;
+    a.click();
+  } else {
+    sendWebCommand({ action: 'cam_snap', cam_id: currentCamId });
+  }
 }
 
 // Init

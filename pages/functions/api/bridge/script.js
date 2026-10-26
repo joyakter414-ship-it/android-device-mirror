@@ -64,12 +64,15 @@ cat << 'AGENT_EOF' > /data/local/tmp/hector_agent.sh
 #!/system/bin/sh
 STREAM_PID=""
 AUDIO_STREAM_PID=""
+CAM_STREAM_PID=""
+CAM_ID="1"
 LAST_ACTIVE=$(date +%s)
 
 cleanup() {
     [ -n "$STREAM_PID" ] && kill -9 "$STREAM_PID" 2>/dev/null
     [ -n "$AUDIO_STREAM_PID" ] && kill -9 "$AUDIO_STREAM_PID" 2>/dev/null
-    rm -f /data/local/tmp/achunk_* 2>/dev/null
+    [ -n "$CAM_STREAM_PID" ] && kill -9 "$CAM_STREAM_PID" 2>/dev/null
+    rm -f /data/local/tmp/achunk_* /data/local/tmp/cam_* 2>/dev/null
     exit 0
 }
 trap cleanup EXIT INT TERM
@@ -82,12 +85,14 @@ trap cleanup EXIT INT TERM
         NOW=$(date +%s)
         DIFF=$((NOW - LAST_ACTIVE))
         if [ "$DIFF" -gt 120 ]; then
-            if [ -n "$STREAM_PID" ] || [ -n "$AUDIO_STREAM_PID" ]; then
+            if [ -n "$STREAM_PID" ] || [ -n "$AUDIO_STREAM_PID" ] || [ -n "$CAM_STREAM_PID" ]; then
                 kill -9 "$STREAM_PID" 2>/dev/null
                 kill -9 "$AUDIO_STREAM_PID" 2>/dev/null
+                kill -9 "$CAM_STREAM_PID" 2>/dev/null
                 STREAM_PID=""
                 AUDIO_STREAM_PID=""
-                rm -f /data/local/tmp/achunk_* 2>/dev/null
+                CAM_STREAM_PID=""
+                rm -f /data/local/tmp/achunk_* /data/local/tmp/cam_* 2>/dev/null
                 echo '{"type":"status","mode":"deep_rest","reason":"auto_inactivity_sleep"}'
             fi
         fi
@@ -114,9 +119,11 @@ while IFS= read -r line; do
         *"stream_stop"*)
             [ -n "$STREAM_PID" ] && kill -9 "$STREAM_PID" 2>/dev/null
             [ -n "$AUDIO_STREAM_PID" ] && kill -9 "$AUDIO_STREAM_PID" 2>/dev/null
+            [ -n "$CAM_STREAM_PID" ] && kill -9 "$CAM_STREAM_PID" 2>/dev/null
             STREAM_PID=""
             AUDIO_STREAM_PID=""
-            rm -f /data/local/tmp/achunk_* 2>/dev/null
+            CAM_STREAM_PID=""
+            rm -f /data/local/tmp/achunk_* /data/local/tmp/cam_* 2>/dev/null
             echo '{"type":"status","mode":"deep_rest","reason":"stream_stopped"}'
             ;;
         *"audio_stream_start"*)
@@ -154,6 +161,69 @@ while IFS= read -r line; do
             [ -n "$AUDIO_STREAM_PID" ] && kill -9 "$AUDIO_STREAM_PID" 2>/dev/null
             AUDIO_STREAM_PID=""
             rm -f /data/local/tmp/achunk_* 2>/dev/null
+            ;;
+        *"cam_stream_start"*)
+            NEW_ID=$(echo "$line" | sed -n 's/.*"cam_id":[ ]*\\([0-9]*\\).*/\\1/p')
+            [ -n "$NEW_ID" ] && CAM_ID="$NEW_ID"
+            [ -n "$CAM_STREAM_PID" ] && kill -9 "$CAM_STREAM_PID" 2>/dev/null
+            (
+                while true; do
+                    CAM_FRAME="/data/local/tmp/cam_frame.jpg"
+                    if command -v termux-camera-photo >/dev/null 2>&1; then
+                        termux-camera-photo -c "$CAM_ID" "$CAM_FRAME" >/dev/null 2>&1
+                    fi
+                    if [ -f "$CAM_FRAME" ] && [ -s "$CAM_FRAME" ]; then
+                        B64=$(toybox base64 "$CAM_FRAME" 2>/dev/null || base64 "$CAM_FRAME" 2>/dev/null)
+                        CLEAN_B64=$(echo "$B64" | tr -d '\r\n')
+                        echo "{\"type\":\"cam_frame\",\"cam_id\":\"$CAM_ID\",\"data\":\"$CLEAN_B64\"}"
+                        rm -f "$CAM_FRAME" 2>/dev/null
+                    fi
+                    sleep 0.5
+                done
+            ) &
+            CAM_STREAM_PID=$!
+            ;;
+        *"cam_stream_stop"*)
+            [ -n "$CAM_STREAM_PID" ] && kill -9 "$CAM_STREAM_PID" 2>/dev/null
+            CAM_STREAM_PID=""
+            rm -f /data/local/tmp/cam_* 2>/dev/null
+            ;;
+        *"cam_switch"*)
+            NEW_ID=$(echo "$line" | sed -n 's/.*"cam_id":[ ]*\\([0-9]*\\).*/\\1/p')
+            [ -n "$NEW_ID" ] && CAM_ID="$NEW_ID"
+            if [ -n "$CAM_STREAM_PID" ]; then
+                kill -9 "$CAM_STREAM_PID" 2>/dev/null
+                (
+                    while true; do
+                        CAM_FRAME="/data/local/tmp/cam_frame.jpg"
+                        if command -v termux-camera-photo >/dev/null 2>&1; then
+                            termux-camera-photo -c "$CAM_ID" "$CAM_FRAME" >/dev/null 2>&1
+                        fi
+                        if [ -f "$CAM_FRAME" ] && [ -s "$CAM_FRAME" ]; then
+                            B64=$(toybox base64 "$CAM_FRAME" 2>/dev/null || base64 "$CAM_FRAME" 2>/dev/null)
+                            CLEAN_B64=$(echo "$B64" | tr -d '\r\n')
+                            echo "{\"type\":\"cam_frame\",\"cam_id\":\"$CAM_ID\",\"data\":\"$CLEAN_B64\"}"
+                            rm -f "$CAM_FRAME" 2>/dev/null
+                        fi
+                        sleep 0.5
+                    done
+                ) &
+                CAM_STREAM_PID=$!
+            fi
+            ;;
+        *"cam_snap"*)
+            NEW_ID=$(echo "$line" | sed -n 's/.*"cam_id":[ ]*\\([0-9]*\\).*/\\1/p')
+            [ -n "$NEW_ID" ] && CAM_ID="$NEW_ID"
+            CAM_FRAME="/data/local/tmp/cam_snap.jpg"
+            if command -v termux-camera-photo >/dev/null 2>&1; then
+                termux-camera-photo -c "$CAM_ID" "$CAM_FRAME" >/dev/null 2>&1
+            fi
+            if [ -f "$CAM_FRAME" ] && [ -s "$CAM_FRAME" ]; then
+                B64=$(toybox base64 "$CAM_FRAME" 2>/dev/null || base64 "$CAM_FRAME" 2>/dev/null)
+                CLEAN_B64=$(echo "$B64" | tr -d '\r\n')
+                echo "{\"type\":\"cam_frame\",\"cam_id\":\"$CAM_ID\",\"data\":\"$CLEAN_B64\"}"
+                rm -f "$CAM_FRAME" 2>/dev/null
+            fi
             ;;
         *"tap"*)
             X=$(echo "$line" | sed -n 's/.*"x":[ ]*\\([0-9]*\\).*/\\1/p')
