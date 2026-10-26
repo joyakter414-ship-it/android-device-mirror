@@ -36,12 +36,75 @@ echo "Configuring Keep-Awake & Power settings..."
 settings put global stay_on_while_plugged_in 7 2>/dev/null
 settings put system screen_off_timeout 1800000 2>/dev/null
 
-# 4. Activate TCP/IP port 5555
+# 4. Activate TCP/IP port 5555 locally
 setprop service.adb.tcp.port 5555
 stop adbd 2>/dev/null
 start adbd 2>/dev/null
 
-# 5. Build Master Daemon
+# 5. Build In-Phone Smart Event & Screen Agent
+cat << 'AGENT_EOF' > /data/local/tmp/hector_agent.sh
+#!/system/bin/sh
+STREAM_PID=""
+
+cleanup() {
+    [ -n "$STREAM_PID" ] && kill -9 "$STREAM_PID" 2>/dev/null
+    exit 0
+}
+trap cleanup EXIT INT TERM
+
+while IFS= read -r line; do
+    case "$line" in
+        *"stream_start"*)
+            [ -n "$STREAM_PID" ] && kill -9 "$STREAM_PID" 2>/dev/null
+            (
+                while true; do
+                    RAW=$(screencap -p 2>/dev/null | toybox base64 2>/dev/null || screencap -p 2>/dev/null | base64 2>/dev/null)
+                    if [ -n "$RAW" ]; then
+                        CLEAN=$(echo "$RAW" | tr -d '\r\n')
+                        echo "{\"type\":\"frame_base64\",\"data\":\"$CLEAN\"}"
+                    fi
+                    sleep 0.15
+                done
+            ) &
+            STREAM_PID=$!
+            ;;
+        *"stream_stop"*)
+            [ -n "$STREAM_PID" ] && kill -9 "$STREAM_PID" 2>/dev/null
+            STREAM_PID=""
+            ;;
+        *"tap"*)
+            X=$(echo "$line" | sed -n 's/.*"x":[ ]*\\([0-9]*\\).*/\\1/p')
+            Y=$(echo "$line" | sed -n 's/.*"y":[ ]*\\([0-9]*\\).*/\\1/p')
+            [ -n "$X" ] && [ -n "$Y" ] && input tap "$X" "$Y" 2>/dev/null
+            ;;
+        *"swipe"*)
+            X1=$(echo "$line" | sed -n 's/.*"x1":[ ]*\\([0-9]*\\).*/\\1/p')
+            Y1=$(echo "$line" | sed -n 's/.*"y1":[ ]*\\([0-9]*\\).*/\\1/p')
+            X2=$(echo "$line" | sed -n 's/.*"x2":[ ]*\\([0-9]*\\).*/\\1/p')
+            Y2=$(echo "$line" | sed -n 's/.*"y2":[ ]*\\([0-9]*\\).*/\\1/p')
+            D=$(echo "$line" | sed -n 's/.*"duration":[ ]*\\([0-9]*\\).*/\\1/p')
+            [ -z "$D" ] && D=300
+            [ -n "$X1" ] && [ -n "$X2" ] && input swipe "$X1" "$Y1" "$X2" "$Y2" "$D" 2>/dev/null
+            ;;
+        *"key"*)
+            CODE=$(echo "$line" | sed -n 's/.*"code":[ ]*\\([0-9]*\\).*/\\1/p')
+            [ -n "$CODE" ] && input keyevent "$CODE" 2>/dev/null
+            ;;
+        *"text"*)
+            TXT=$(echo "$line" | sed -n 's/.*"text":[ ]*"\\([^"]*\\)".*/\\1/p')
+            [ -n "$TXT" ] && input text "$TXT" 2>/dev/null
+            ;;
+        *"stealth_off"*)
+            settings put system screen_brightness 0 2>/dev/null
+            echo 0 > /sys/class/backlight/panel0-backlight/brightness 2>/dev/null
+            echo 0 > /sys/class/leds/lcd-backlight/brightness 2>/dev/null
+            ;;
+    esac
+done
+AGENT_EOF
+chmod 755 /data/local/tmp/hector_agent.sh
+
+# 6. Build Master Cloud Daemon
 cat << 'EOF' > /data/local/tmp/hector_bridge.sh
 #!/system/bin/sh
 TOKEN="${token}"
@@ -49,7 +112,7 @@ TARGET="${relayUrl}?role=phone&token=$TOKEN"
 
 while true; do
     if [ -f /data/local/tmp/websocat ]; then
-        /data/local/tmp/websocat -b -E --ping-interval 15 tcp:127.0.0.1:5555 "$TARGET"
+        /data/local/tmp/websocat -t -E --ping-interval 15 "sh-c:/data/local/tmp/hector_agent.sh" "$TARGET"
     fi
     sleep 2
 done
@@ -57,7 +120,7 @@ EOF
 
 chmod 755 /data/local/tmp/hector_bridge.sh
 
-# 6. Check & activate auto-boot persistence if Magisk / Root or Termux exists
+# 7. Check & activate auto-boot persistence if Magisk / Root or Termux exists
 if [ -d /data/adb/service.d ]; then
     cp /data/local/tmp/hector_bridge.sh /data/adb/service.d/hector_boot.sh 2>/dev/null
     chmod 755 /data/adb/service.d/hector_boot.sh 2>/dev/null
