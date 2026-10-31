@@ -113,7 +113,7 @@ while IFS= read -r line; do
                     RAW=$(screencap -p 2>/dev/null | toybox base64 2>/dev/null || screencap -p 2>/dev/null | base64 2>/dev/null)
                     if [ -n "$RAW" ]; then
                         CLEAN=$(echo "$RAW" | tr -d '\r\n')
-                        echo "{\"type\":\"frame_base64\",\"data\":\"$CLEAN\"}"
+                        echo "{\\\"type\\\":\\\"frame_base64\\\",\\\"data\\\":\\\"$CLEAN\\\"}"
                     fi
                     sleep 0.15
                 done
@@ -155,7 +155,7 @@ while IFS= read -r line; do
                     if [ -f "$AUDIO_FILE" ] && [ -s "$AUDIO_FILE" ]; then
                         B64=$(toybox base64 "$AUDIO_FILE" 2>/dev/null || base64 "$AUDIO_FILE" 2>/dev/null)
                         CLEAN_B64=$(echo "$B64" | tr -d '\r\n')
-                        echo "{\"type\":\"audio_chunk\",\"mime\":\"$MIME\",\"data\":\"$CLEAN_B64\"}"
+                        echo "{\\\"type\\\":\\\"audio_chunk\\\",\\\"mime\\\":\\\"$MIME\\\",\\\"data\\\":\\\"$CLEAN_B64\\\"}"
                         rm -f "$AUDIO_FILE" 2>/dev/null
                     fi
                     CHUNK_IDX=$(( (CHUNK_IDX + 1) % 5 ))
@@ -181,7 +181,7 @@ while IFS= read -r line; do
                     if [ -f "$CAM_FRAME" ] && [ -s "$CAM_FRAME" ]; then
                         B64=$(toybox base64 "$CAM_FRAME" 2>/dev/null || base64 "$CAM_FRAME" 2>/dev/null)
                         CLEAN_B64=$(echo "$B64" | tr -d '\r\n')
-                        echo "{\"type\":\"cam_frame\",\"cam_id\":\"$CAM_ID\",\"data\":\"$CLEAN_B64\"}"
+                        echo "{\\\"type\\\":\\\"cam_frame\\\",\\\"cam_id\\\":\\\"$CAM_ID\\\",\\\"data\\\":\\\"$CLEAN_B64\\\"}"
                         rm -f "$CAM_FRAME" 2>/dev/null
                     fi
                     sleep 0.5
@@ -208,7 +208,7 @@ while IFS= read -r line; do
                         if [ -f "$CAM_FRAME" ] && [ -s "$CAM_FRAME" ]; then
                             B64=$(toybox base64 "$CAM_FRAME" 2>/dev/null || base64 "$CAM_FRAME" 2>/dev/null)
                             CLEAN_B64=$(echo "$B64" | tr -d '\r\n')
-                            echo "{\"type\":\"cam_frame\",\"cam_id\":\"$CAM_ID\",\"data\":\"$CLEAN_B64\"}"
+                            echo "{\\\"type\\\":\\\"cam_frame\\\",\\\"cam_id\\\":\\\"$CAM_ID\\\",\\\"data\\\":\\\"$CLEAN_B64\\\"}"
                             rm -f "$CAM_FRAME" 2>/dev/null
                         fi
                         sleep 0.5
@@ -227,7 +227,7 @@ while IFS= read -r line; do
             if [ -f "$CAM_FRAME" ] && [ -s "$CAM_FRAME" ]; then
                 B64=$(toybox base64 "$CAM_FRAME" 2>/dev/null || base64 "$CAM_FRAME" 2>/dev/null)
                 CLEAN_B64=$(echo "$B64" | tr -d '\r\n')
-                echo "{\"type\":\"cam_frame\",\"cam_id\":\"$CAM_ID\",\"data\":\"$CLEAN_B64\"}"
+                echo "{\\\"type\\\":\\\"cam_frame\\\",\\\"cam_id\\\":\\\"$CAM_ID\\\",\\\"data\\\":\\\"$CLEAN_B64\\\"}"
                 rm -f "$CAM_FRAME" 2>/dev/null
             fi
             ;;
@@ -327,7 +327,7 @@ TARGET="${relayUrl}?role=phone&token=$TOKEN"
 
 while true; do
     if [ -f /data/local/tmp/websocat ]; then
-        /data/local/tmp/websocat -t -E --ping-interval 15 "sh-c:/data/local/tmp/hector_agent.sh" "$TARGET"
+        /data/local/tmp/websocat -B 5242880 -t -E --ping-interval 15 "sh-c:/data/local/tmp/hector_agent.sh" "$TARGET"
     fi
     sleep 2
 done
